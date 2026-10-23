@@ -1,7 +1,6 @@
+import { env } from "./config/env";
 import app from "./app";
 
-const PORT = 3000;
-
-app.listen(PORT, () => {
-  console.log(`BookSlot API running on http://localhost:${PORT}`);
+app.listen(env.PORT, () => {
+  console.log(`BookSlot API running on http://localhost:${env.PORT}`);
 });
