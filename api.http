@@ -1,0 +1,23 @@
+### Register: başarılı (201)
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{ "name": "Ali Veli", "email": "Ali@Example.com", "password": "gizli12345" }
+
+### Register: aynı e-posta, farklı harf (409 EMAIL_TAKEN)
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{ "name": "Baska Biri", "email": "ali@example.com", "password": "gizli12345" }
+
+### Register: kısa şifre (400 VALIDATION_ERROR)
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{ "name": "Ayse", "email": "ayse@example.com", "password": "123" }
+
+### Register: fazladan alan yok sayılmalı (201)
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{ "name": "Mehmet", "email": "mehmet@example.com", "password": "gizli12345", "emailVerifiedAt": "2020-01-01" }

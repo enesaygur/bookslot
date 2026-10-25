@@ -2,6 +2,7 @@ import express from "express";
 import { prisma } from "./lib/prisma";
 import { AppError } from "./errors/AppError";
 import { errorHandler } from "./middleware/errorHandler";
+import authRouter from "./routes/authRoutes";
 
 const app = express();
 
@@ -19,6 +20,8 @@ app.get("/health/db", async (_req, res) => {
     res.status(503).json({ db: "unreachable" });
   }
 });
+
+app.use("/auth", authRouter);
 
 app.use((_req, _res, next) => {
   next(new AppError(404, "Route not found", "NOT_FOUND"));
