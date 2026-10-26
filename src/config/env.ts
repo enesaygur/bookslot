@@ -9,6 +9,7 @@ const envSchema = z.object({
     .default("development"),
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.string().min(1),
+  FRONTEND_URL: z.string().url().default("http://localhost:5173"),
 });
 
 const result = envSchema.safeParse(process.env);

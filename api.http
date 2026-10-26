@@ -21,3 +21,39 @@ POST http://localhost:3000/auth/register
 Content-Type: application/json
 
 { "name": "Mehmet", "email": "mehmet@example.com", "password": "gizli12345", "emailVerifiedAt": "2020-01-01" }
+
+### Register: başarılı (201)
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{ "name": "ayşe demir", "email": "ayse2@example.com", "password": "gizli12345" }
+
+### Verify: geçerli token (200)
+POST http://localhost:3000/auth/verify-email
+Content-Type: application/json
+
+{ "token": "b8c5156c01bf2c39e7d0640f5940a91f1e5c2e7234fd16b5fa2869cdb525a8f9" }
+
+### Verify: aynı token tekrar (400 INVALID_TOKEN)
+POST http://localhost:3000/auth/verify-email
+Content-Type: application/json
+
+{ "token": "b8c5156c01bf2c39e7d0640f5940a91f1e5c2e7234fd16b5fa2869cdb525a8f9" }
+
+### Verify: uydurma token (400 INVALID_TOKEN)
+POST http://localhost:3000/auth/verify-email
+Content-Type: application/json
+
+{ "token": "abc123" }
+
+### Resend: kayıtlı olmayan e-posta (200, aynı cevap)
+POST http://localhost:3000/auth/resend-verification
+Content-Type: application/json
+
+{ "email": "yok@example.com" }
+
+### Resend: doğrulanmamış hesap (200, konsolda yeni link)
+POST http://localhost:3000/auth/resend-verification
+Content-Type: application/json
+
+{ "email": "ayse2@example.com" }
