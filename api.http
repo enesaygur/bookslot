@@ -57,3 +57,39 @@ POST http://localhost:3000/auth/resend-verification
 Content-Type: application/json
 
 { "email": "ayse2@example.com" }
+
+### Login: doğrulanmamış hesap (403 EMAIL_NOT_VERIFIED)
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{ "email": "mehmet@example.com", "password": "gizli12345" }
+
+### Login: yanlış şifre (401)
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{ "email": "ali@example.com", "password": "yanlis-sifre" }
+
+### Login: olmayan e-posta (401, aynı mesaj)
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{ "email": "yok@example.com", "password": "yanlis-sifre" }
+
+### Login: doğru bilgiler (200, accessToken döner)
+# @name login
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{ "email": "ali@example.com", "password": "gizli12345" }
+
+### Me: token ile (200)
+GET http://localhost:3000/auth/me
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### Me: token yok (401)
+GET http://localhost:3000/auth/me
+
+### Me: bozuk token (401)
+GET http://localhost:3000/auth/me
+Authorization: Bearer abc.def.ghi

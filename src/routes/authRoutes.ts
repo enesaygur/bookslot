@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  loginSchema,
   registerSchema,
   resendVerificationSchema,
   verifyEmailSchema,
@@ -8,8 +9,11 @@ import {
   register,
   verifyEmail,
   resendVerification,
+  login,
+  me,
 } from "../controllers/authController";
 import { validate } from "../middleware/validate";
+import { authMiddleware } from "../middleware/authMiddleware";
 
 const router = Router();
 
@@ -20,5 +24,7 @@ router.post(
   validate(resendVerificationSchema),
   resendVerification,
 );
+router.post("/login", validate(loginSchema), login);
+router.get("/me", authMiddleware, me);
 
 export default router;

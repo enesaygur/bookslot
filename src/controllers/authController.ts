@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import {
+  getCurrentUser,
+  loginUser,
   registerUser,
   resendVerificationEmail,
   verifyUserEmail,
@@ -20,4 +22,14 @@ export async function resendVerification(req: Request, res: Response) {
   res.json({
     message: "If the account exists and is unverified, a new link was sent",
   });
+}
+
+export async function login(req: Request, res: Response) {
+  const result = await loginUser(req.body);
+  res.json(result);
+}
+
+export async function me(req: Request, res: Response) {
+  const user = await getCurrentUser(req.userId!);
+  res.json({ user });
 }

@@ -1,13 +1,15 @@
 import bcrypt from "bcryptjs";
-import { RegisterInput } from "../schemas/authSchema";
+import { LoginInput, RegisterInput } from "../schemas/authSchema";
 import { prisma } from "../lib/prisma";
 import { Prisma } from "@prisma/client";
 import { AppError } from "../errors/AppError";
 import { generateToken, hashToken } from "../lib/token";
 import { sendVerificationEmail } from "./emailService";
+import { signAccessToken } from "../lib/jwt";
 
 const BCRYPT_COST = 12;
 const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
+const DUMMY_HASH = bcrypt.hashSync("dummy-password", BCRYPT_COST);
 export async function registerUser(input: RegisterInput) {
   const passwordHash = await bcrypt.hash(input.password, BCRYPT_COST);
   const rawToken = generateToken();
@@ -89,4 +91,41 @@ export async function resendVerificationEmail(email: string) {
   ]);
 
   await sendVerificationEmail(user.email, rawToken);
+}
+
+export async function loginUser(input: LoginInput) {
+  const user = await prisma.user.findUnique({
+    where: { email: input.email },
+  });
+
+  const passwordOk = await bcrypt.compare(
+    input.password,
+    user?.passwordHash ?? DUMMY_HASH,
+  );
+
+  if (!user || !passwordOk) {
+    throw new AppError(401, "Invalid email or password", "INVALID_CREDENTIALS");
+  }
+
+  if (!user.emailVerifiedAt) {
+    throw new AppError(403, "Email not verified", "EMAIL_NOT_VERIFIED");
+  }
+
+  return {
+    accessToken: signAccessToken(user.id),
+    user: { id: user.id, name: user.name, email: user.email },
+  };
+}
+
+export async function getCurrentUser(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, name: true, email: true, createdAt: true },
+  });
+
+  if (!user) {
+    throw new AppError(401, "User no longer exists", "UNAUTHORIZED");
+  }
+
+  return user;
 }
