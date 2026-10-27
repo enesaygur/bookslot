@@ -93,3 +93,15 @@ GET http://localhost:3000/auth/me
 ### Me: bozuk token (401)
 GET http://localhost:3000/auth/me
 Authorization: Bearer abc.def.ghi
+
+### 1) Login: cevapta Set-Cookie başlığına bak, gövdede refreshToken olmamalı
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{ "email": "ali@example.com", "password": "gizli12345" }
+
+### 2) Refresh: yeni accessToken, yeni cookie (değeri değişmeli)
+POST http://localhost:3000/auth/refresh
+
+### 3) Refresh: tekrar (her seferinde yeni token, 200)
+POST http://localhost:3000/auth/refresh

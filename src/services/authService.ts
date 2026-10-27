@@ -6,10 +6,30 @@ import { AppError } from "../errors/AppError";
 import { generateToken, hashToken } from "../lib/token";
 import { sendVerificationEmail } from "./emailService";
 import { signAccessToken } from "../lib/jwt";
+import { REFRESH_TOKEN_TTL_MS } from "../config/cookies";
+import { randomUUID } from "crypto";
 
 const BCRYPT_COST = 12;
 const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 const DUMMY_HASH = bcrypt.hashSync("dummy-password", BCRYPT_COST);
+
+async function createRefreshToken(
+  userId: string,
+  familyId: string,
+  db: Prisma.TransactionClient = prisma,
+) {
+  const rawToken = generateToken();
+
+  await db.refreshToken.create({
+    data: {
+      userId,
+      familyId,
+      tokenHash: hashToken(rawToken),
+      expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
+    },
+  });
+  return rawToken;
+}
 export async function registerUser(input: RegisterInput) {
   const passwordHash = await bcrypt.hash(input.password, BCRYPT_COST);
   const rawToken = generateToken();
@@ -111,8 +131,11 @@ export async function loginUser(input: LoginInput) {
     throw new AppError(403, "Email not verified", "EMAIL_NOT_VERIFIED");
   }
 
+  const refreshToken = await createRefreshToken(user.id, randomUUID());
+
   return {
     accessToken: signAccessToken(user.id),
+    refreshToken,
     user: { id: user.id, name: user.name, email: user.email },
   };
 }
@@ -128,4 +151,45 @@ export async function getCurrentUser(userId: string) {
   }
 
   return user;
+}
+
+export async function refreshSession(rawToken: string | undefined) {
+  const invalid = new AppError(401, "Invalid refresh token", "UNAUTHORIZED");
+
+  if (!rawToken) throw invalid;
+
+  const existing = await prisma.refreshToken.findUnique({
+    where: { tokenHash: hashToken(rawToken) },
+  });
+
+  if (!existing) throw invalid;
+
+  if (existing.revokedAt) {
+    console.warn(
+      `[security] refresh token reuse detected, family ${existing.familyId}`,
+    );
+    await prisma.refreshToken.updateMany({
+      where: { familyId: existing.familyId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    throw invalid;
+  }
+
+  if (existing.expiresAt <= new Date()) throw invalid;
+
+  return prisma.$transaction(async (tx) => {
+    const claimed = await tx.refreshToken.updateMany({
+      where: { id: existing.id, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+
+    if (claimed.count === 0) throw invalid;
+
+    const refreshToken = await createRefreshToken(
+      existing.userId,
+      existing.familyId,
+      tx,
+    );
+    return { accessToken: signAccessToken(existing.userId), refreshToken };
+  });
 }

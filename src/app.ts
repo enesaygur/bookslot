@@ -3,10 +3,12 @@ import { prisma } from "./lib/prisma";
 import { AppError } from "./errors/AppError";
 import { errorHandler } from "./middleware/errorHandler";
 import authRouter from "./routes/authRoutes";
+import cookieParser from "cookie-parser";
 
 const app = express();
 
 app.use(express.json());
+app.use(cookieParser());
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
