@@ -17,6 +17,7 @@ model User {
   updatedAt               DateTime                 @updatedAt
   refreshTokens           RefreshToken[]
   emailVerificationTokens EmailVerificationToken[]
+  membership              Member[]
 }
 
 model RefreshToken {
@@ -42,5 +43,33 @@ model EmailVerificationToken {
   usedAt    DateTime?
   createdAt DateTime  @default(now())
 
+  @@index([userId])
+}
+
+enum MemberRole {
+  OWNER
+  STAFF
+}
+
+model Business {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members Member[]
+}
+
+model Member {
+  id         String     @id @default(uuid())
+  role       MemberRole
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessId String
+  business   Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdAt  DateTime   @default(now())
+
+  @@unique([businessId, userId])
   @@index([userId])
 }
