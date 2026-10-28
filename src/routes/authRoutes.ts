@@ -12,6 +12,7 @@ import {
   login,
   me,
   refresh,
+  logout,
 } from "../controllers/authController";
 import { validate } from "../middleware/validate";
 import { authMiddleware } from "../middleware/authMiddleware";
@@ -28,5 +29,6 @@ router.post(
 router.post("/login", validate(loginSchema), login);
 router.get("/me", authMiddleware, me);
 router.post("/refresh", refresh);
+router.post("/logout", logout);
 
 export default router;

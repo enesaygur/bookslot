@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import {
   getCurrentUser,
   loginUser,
+  logoutSession,
   refreshSession,
   registerUser,
   resendVerificationEmail,
@@ -52,4 +53,10 @@ export async function refresh(req: Request, res: Response) {
     res.clearCookie(REFRESH_COOKIE_NAME, clearRefreshCookieOptions);
     throw err;
   }
+}
+
+export async function logout(req: Request, res: Response) {
+  await logoutSession(req.cookies?.[REFRESH_COOKIE_NAME]);
+  res.clearCookie(REFRESH_COOKIE_NAME, clearRefreshCookieOptions);
+  res.status(204).send();
 }

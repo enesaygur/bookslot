@@ -193,3 +193,18 @@ export async function refreshSession(rawToken: string | undefined) {
     return { accessToken: signAccessToken(existing.userId), refreshToken };
   });
 }
+
+export async function logoutSession(rawToken: string | undefined) {
+  if (!rawToken) return;
+
+  const existing = await prisma.refreshToken.findUnique({
+    where: { tokenHash: hashToken(rawToken) },
+  });
+
+  if (!existing) return;
+
+  await prisma.refreshToken.updateMany({
+    where: { familyId: existing.familyId, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+}
