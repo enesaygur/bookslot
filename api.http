@@ -120,3 +120,34 @@ POST http://localhost:3000/auth/refresh
 
 ### 4) Logout tekrar (yine 204, idempotent)
 POST http://localhost:3000/auth/logout
+
+### Business: oluştur (201)
+POST http://localhost:3000/businesses
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "name": "Ali Berber", "slug": "ali-berber" }
+
+### Business: aynı slug (409 SLUG_TAKEN)
+POST http://localhost:3000/businesses
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "name": "Baska Berber", "slug": "ali-berber" }
+
+### Business: geçersiz slug (400 VALIDATION_ERROR)
+POST http://localhost:3000/businesses
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "name": "Test", "slug": "Ali Berber!" }
+
+### Business: token yok (401)
+POST http://localhost:3000/businesses
+Content-Type: application/json
+
+{ "name": "Test", "slug": "test-isletme" }
+
+### Business: listele (200, role: OWNER)
+GET http://localhost:3000/businesses
+Authorization: Bearer {{login.response.body.accessToken}}

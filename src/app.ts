@@ -3,6 +3,7 @@ import { prisma } from "./lib/prisma";
 import { AppError } from "./errors/AppError";
 import { errorHandler } from "./middleware/errorHandler";
 import authRouter from "./routes/authRoutes";
+import businessRouter from "./routes/businessRoutes";
 import cookieParser from "cookie-parser";
 
 const app = express();
@@ -24,6 +25,7 @@ app.get("/health/db", async (_req, res) => {
 });
 
 app.use("/auth", authRouter);
+app.use("/businesses", businessRouter);
 
 app.use((_req, _res, next) => {
   next(new AppError(404, "Route not found", "NOT_FOUND"));
