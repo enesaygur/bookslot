@@ -40,3 +40,25 @@ export async function listMyBusiness(userId: string) {
   });
   return memberships.map((m) => ({ ...m.business, role: m.role }));
 }
+
+const businessSelect = {
+  id: true,
+  name: true,
+  slug: true,
+  createdAt: true,
+} as const;
+
+export async function getBusiness(businessId: string) {
+  return prisma.business.findUniqueOrThrow({
+    where: { id: businessId },
+    select: businessSelect,
+  });
+}
+
+export async function renameBusiness(businessId: string, name: string) {
+  return prisma.business.update({
+    where: { id: businessId },
+    data: { name },
+    select: businessSelect,
+  });
+}

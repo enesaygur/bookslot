@@ -151,3 +151,41 @@ Content-Type: application/json
 ### Business: listele (200, role: OWNER)
 GET http://localhost:3000/businesses
 Authorization: Bearer {{login.response.body.accessToken}}
+
+### İşletme listesi (ID buradan okunacak)
+# @name myBusinesses
+GET http://localhost:3000/businesses
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### Detay, OWNER (200)
+GET http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### Ad değiştir, OWNER (200)
+PATCH http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "name": "Ali Berber Salon" }
+
+### Mehmet login
+# @name loginMehmet
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{ "email": "mehmet@example.com", "password": "gizli12345" }
+
+### Mehmet: detay (üye değil → 403, STAFF yapınca 200)
+GET http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}
+Authorization: Bearer {{loginMehmet.response.body.accessToken}}
+
+### Mehmet: ad değiştir (STAFF olsa bile 403)
+PATCH http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}
+Content-Type: application/json
+Authorization: Bearer {{loginMehmet.response.body.accessToken}}
+
+{ "name": "Hack" }
+
+### Uydurma ID (403)
+GET http://localhost:3000/businesses/abc
+Authorization: Bearer {{login.response.body.accessToken}}

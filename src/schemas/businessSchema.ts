@@ -15,3 +15,7 @@ export const createBusinessSchema = z.object({
 });
 
 export type CreateBusinessInput = z.infer<typeof createBusinessSchema>;
+
+export const updateBusinessSchema = z.object({
+  name: z.string().trim().min(2).max(100),
+});
