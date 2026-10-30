@@ -13,6 +13,8 @@ import {
 import { authMiddleware } from "../middleware/authMiddleware";
 import { requireRole } from "../middleware/requireRole";
 import { MemberRole } from "@prisma/client";
+import { sendInvite } from "../controllers/inviteController";
+import { createInviteSchema } from "../schemas/inviteSchema";
 
 const router = Router();
 
@@ -30,6 +32,12 @@ router.patch(
   requireRole(MemberRole.OWNER),
   validate(updateBusinessSchema),
   rename,
+);
+router.post(
+  "/:businessId/invites",
+  requireRole(MemberRole.OWNER),
+  validate(createInviteSchema),
+  sendInvite,
 );
 
 export default router;

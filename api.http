@@ -189,3 +189,46 @@ Authorization: Bearer {{loginMehmet.response.body.accessToken}}
 ### Uydurma ID (403)
 GET http://localhost:3000/businesses/abc
 Authorization: Bearer {{login.response.body.accessToken}}
+
+
+### 1) Ali, Mehmet'i davet eder (201, konsolda link çıkar)
+POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/invites
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "email": "mehmet@example.com" }
+
+### 2) Yanlış kişi kabul etmeye çalışır: Ali (400 INVALID_INVITE)
+POST http://localhost:3000/invites/accept
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "token": "72b3cde9f42b51d5da5cb3f97c51c0504be8dbcb97bb986b361c392318937fdc" }
+
+### 3) Mehmet kabul eder (200, role: STAFF)
+POST http://localhost:3000/invites/accept
+Content-Type: application/json
+Authorization: Bearer {{loginMehmet.response.body.accessToken}}
+
+{ "token": "2390b5dd3e2edf43894c148b15b82aa8a3b2eff1b5c0068caa8e797dc039f4ae" }
+
+### 4) Aynı token tekrar (400)
+POST http://localhost:3000/invites/accept
+Content-Type: application/json
+Authorization: Bearer {{loginMehmet.response.body.accessToken}}
+
+{ "token": "72b3cde9f42b51d5da5cb3f97c51c0504be8dbcb97bb986b361c392318937fdc" }
+
+### 5) Mehmet (STAFF) davet göndermeye çalışır (403)
+POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/invites
+Content-Type: application/json
+Authorization: Bearer {{loginMehmet.response.body.accessToken}}
+
+{ "email": "biri@example.com" }
+
+### 6) Ali, zaten üye olan Mehmet'i tekrar davet eder (409 ALREADY_MEMBER)
+POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/invites
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "email": "mehmet@example.com" }

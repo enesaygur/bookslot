@@ -18,6 +18,7 @@ model User {
   refreshTokens           RefreshToken[]
   emailVerificationTokens EmailVerificationToken[]
   membership              Member[]
+  invitesSent             Invite[]
 }
 
 model RefreshToken {
@@ -59,6 +60,7 @@ model Business {
   updatedAt DateTime @updatedAt
 
   members Member[]
+  invites Invite[]
 }
 
 model Member {
@@ -72,4 +74,19 @@ model Member {
 
   @@unique([businessId, userId])
   @@index([userId])
+}
+
+model Invite {
+  id          String    @id @default(uuid())
+  email       String
+  tokenHash   String    @unique
+  businessId  String
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  invitedById String
+  invitedBy   User      @relation(fields: [invitedById], references: [id], onDelete: Cascade)
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([businessId, email])
 }
