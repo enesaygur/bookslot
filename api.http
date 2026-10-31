@@ -232,3 +232,42 @@ Content-Type: application/json
 Authorization: Bearer {{login.response.body.accessToken}}
 
 { "email": "mehmet@example.com" }
+
+
+
+### 1) Ali: üye listesi (200, 2 kişi: OWNER + STAFF)
+# @name aliMembers
+GET http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/members
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### 2) Mehmet kendi işletmesini açar (201, bir kez çalıştır)
+# @name createMehmetBiz
+POST http://localhost:3000/businesses
+Content-Type: application/json
+Authorization: Bearer {{loginMehmet.response.body.accessToken}}
+
+{ "name": "Mehmet Kuafor", "slug": "mehmet-kuafor" }
+
+### 3) Ali, Mehmet'in işletmesinin üyelerine bakar (403, üye değil)
+GET http://localhost:3000/businesses/{{createMehmetBiz.response.body.$.business.id}}/members
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### 4) IDOR denemesi: Mehmet, KENDİ işletmesinin URL'si ile Ali'nin işletmesindeki üyeyi silmeye çalışır (404)
+DELETE http://localhost:3000/businesses/{{createMehmetBiz.response.body.$.business.id}}/members/{{aliMembers.response.body.$.members[1].id}}
+Authorization: Bearer {{loginMehmet.response.body.accessToken}}
+
+### 5) Mehmet (Ali'nin işletmesinde STAFF) silmeye çalışır (403, OWNER değil)
+DELETE http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/members/{{aliMembers.response.body.$.members[1].id}}
+Authorization: Bearer {{loginMehmet.response.body.accessToken}}
+
+### 6) Ali, kendi OWNER üyeliğini silmeye çalışır (404, sadece STAFF silinebilir)
+DELETE http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/members/{{aliMembers.response.body.$.members[0].id}}
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### 7) Ali, Mehmet'i işletmesinden çıkarır (204)
+DELETE http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/members/{{aliMembers.response.body.$.members[1].id}}
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### 8) Mehmet, eski token'ıyla Ali'nin işletmesine bakar (403, anında)
+GET http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}
+Authorization: Bearer {{loginMehmet.response.body.accessToken}}

@@ -15,6 +15,7 @@ import { requireRole } from "../middleware/requireRole";
 import { MemberRole } from "@prisma/client";
 import { sendInvite } from "../controllers/inviteController";
 import { createInviteSchema } from "../schemas/inviteSchema";
+import { listMembers, removeMember } from "../controllers/memberController";
 
 const router = Router();
 
@@ -38,6 +39,16 @@ router.post(
   requireRole(MemberRole.OWNER),
   validate(createInviteSchema),
   sendInvite,
+);
+router.get(
+  "/:businessId/members",
+  requireRole(MemberRole.OWNER, MemberRole.STAFF),
+  listMembers,
+);
+router.delete(
+  "/:businessId/members/:memberId",
+  requireRole(MemberRole.OWNER),
+  removeMember,
 );
 
 export default router;
