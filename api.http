@@ -271,3 +271,53 @@ Authorization: Bearer {{login.response.body.accessToken}}
 ### 8) Mehmet, eski token'ıyla Ali'nin işletmesine bakar (403, anında)
 GET http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}
 Authorization: Bearer {{loginMehmet.response.body.accessToken}}
+
+
+### 1) Hizmet oluştur (201)
+# @name createServiceReq
+POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/services
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "name": "Sac Kesimi", "description": "Yikama dahil", "durationMinutes": 30, "priceCents": 25000 }
+
+### 2) Geçersiz süre, 5'in katı değil (400)
+POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/services
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "name": "Sakal", "durationMinutes": 33, "priceCents": 10000 }
+
+### 3) Negatif fiyat (400)
+POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/services
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "name": "Sakal", "durationMinutes": 20, "priceCents": -5 }
+
+### 4) Liste (200)
+GET http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/services
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### 5) Tekil (200)
+GET http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/services/{{createServiceReq.response.body.$.service.id}}
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### 6) Fiyat güncelle (200)
+PATCH http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/services/{{createServiceReq.response.body.$.service.id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "priceCents": 30000 }
+
+### 7) Mehmet (kendi işletmesinin OWNER'ı), Ali'nin hizmetine kendi URL'siyle erişmeye çalışır (404)
+GET http://localhost:3000/businesses/{{createMehmetBiz.response.body.$.business.id}}/services/{{createServiceReq.response.body.$.service.id}}
+Authorization: Bearer {{loginMehmet.response.body.accessToken}}
+
+### 8) Mehmet, Ali'nin işletmesinin hizmet listesine bakar (403, artık üye değil)
+GET http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/services
+Authorization: Bearer {{loginMehmet.response.body.accessToken}}
+
+### 9) Hizmeti devre dışı bırak (204), sonra 5. isteği tekrar gönder: isActive false
+DELETE http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/services/{{createServiceReq.response.body.$.service.id}}
+Authorization: Bearer {{login.response.body.accessToken}}

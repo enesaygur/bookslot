@@ -16,6 +16,7 @@ import { MemberRole } from "@prisma/client";
 import { sendInvite } from "../controllers/inviteController";
 import { createInviteSchema } from "../schemas/inviteSchema";
 import { listMembers, removeMember } from "../controllers/memberController";
+import serviceRouter from "./serviceRoutes";
 
 const router = Router();
 
@@ -50,5 +51,7 @@ router.delete(
   requireRole(MemberRole.OWNER),
   removeMember,
 );
+
+router.use("/:businessId/services", serviceRouter);
 
 export default router;
