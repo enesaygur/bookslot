@@ -65,13 +65,14 @@ model Business {
 }
 
 model Member {
-  id         String     @id @default(uuid())
-  role       MemberRole
-  userId     String
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  businessId String
-  business   Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  createdAt  DateTime   @default(now())
+  id               String            @id @default(uuid())
+  role             MemberRole
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessId       String
+  business         Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdAt        DateTime          @default(now())
+  workingIntervals WorkingInterval[]
 
   @@unique([businessId, userId])
   @@index([userId])
@@ -105,4 +106,16 @@ model Service {
   updatedAt       DateTime @updatedAt
 
   @@index([businessId])
+}
+
+model WorkingInterval {
+  id          String   @id @default(uuid())
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  dayOfWeek   Int
+  startMinute Int
+  endMinute   Int
+  createdAt   DateTime @default(now())
+
+  @@index([memberId, dayOfWeek])
 }

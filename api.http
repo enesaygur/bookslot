@@ -203,14 +203,14 @@ POST http://localhost:3000/invites/accept
 Content-Type: application/json
 Authorization: Bearer {{login.response.body.accessToken}}
 
-{ "token": "72b3cde9f42b51d5da5cb3f97c51c0504be8dbcb97bb986b361c392318937fdc" }
+{ "token": "3a3bea476a8568fca73cb0c38b09b3233bb983894f389de41bbe57a447310c2e" }
 
 ### 3) Mehmet kabul eder (200, role: STAFF)
 POST http://localhost:3000/invites/accept
 Content-Type: application/json
 Authorization: Bearer {{loginMehmet.response.body.accessToken}}
 
-{ "token": "2390b5dd3e2edf43894c148b15b82aa8a3b2eff1b5c0068caa8e797dc039f4ae" }
+{ "token": "3a3bea476a8568fca73cb0c38b09b3233bb983894f389de41bbe57a447310c2e" }
 
 ### 4) Aynı token tekrar (400)
 POST http://localhost:3000/invites/accept
@@ -321,3 +321,73 @@ Authorization: Bearer {{loginMehmet.response.body.accessToken}}
 ### 9) Hizmeti devre dışı bırak (204), sonra 5. isteği tekrar gönder: isActive false
 DELETE http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/services/{{createServiceReq.response.body.$.service.id}}
 Authorization: Bearer {{login.response.body.accessToken}}
+
+
+### 1) Ali kendi programını kaydeder (200)
+PUT http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/members/{{aliMembers.response.body.$.members[0].id}}/working-hours
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{
+  "hours": [
+    { "dayOfWeek": 1, "start": "09:00", "end": "12:00" },
+    { "dayOfWeek": 1, "start": "13:00", "end": "18:00" },
+    { "dayOfWeek": 2, "start": "09:00", "end": "17:30" }
+  ]
+}
+
+### 2) Oku (200, güne ve saate göre sıralı)
+GET http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/members/{{aliMembers.response.body.$.members[0].id}}/working-hours
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### 3) Bitiş başlangıçtan önce (400)
+PUT http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/members/{{aliMembers.response.body.$.members[0].id}}/working-hours
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "hours": [{ "dayOfWeek": 1, "start": "18:00", "end": "09:00" }] }
+
+### 4) Çakışan aralıklar (400)
+PUT http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/members/{{aliMembers.response.body.$.members[0].id}}/working-hours
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "hours": [
+  { "dayOfWeek": 3, "start": "09:00", "end": "13:00" },
+  { "dayOfWeek": 3, "start": "12:00", "end": "18:00" }
+] }
+
+### 5) Hatalı biçim ve gün (400)
+PUT http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/members/{{aliMembers.response.body.$.members[0].id}}/working-hours
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "hours": [{ "dayOfWeek": 8, "start": "9:00", "end": "17:00" }] }
+
+### 6) Tümünü değiştirme: sadece Çarşamba gönder, 2. isteği tekrarla (Pazartesi/Salı kaybolmuş olmalı)
+PUT http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/members/{{aliMembers.response.body.$.members[0].id}}/working-hours
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "hours": [{ "dayOfWeek": 3, "start": "10:00", "end": "16:00" }] }
+
+### 7) IDOR: Mehmet kendi işletmesinin URL'siyle Ali'nin programını değiştirmeye çalışır (404)
+PUT http://localhost:3000/businesses/{{createMehmetBiz.response.body.$.business.id}}/members/{{aliMembers.response.body.$.members[0].id}}/working-hours
+Content-Type: application/json
+Authorization: Bearer {{loginMehmet.response.body.accessToken}}
+
+{ "hours": [] }
+
+### 8) Mehmet (STAFF) KENDİ programını değiştirir (200)
+PUT http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/members/{{aliMembers.response.body.$.members[1].id}}/working-hours
+Content-Type: application/json
+Authorization: Bearer {{loginMehmet.response.body.accessToken}}
+
+{ "hours": [{ "dayOfWeek": 1, "start": "10:00", "end": "15:00" }] }
+
+### 9) Mehmet (STAFF) ALİ'NİN programını değiştirmeye çalışır (403)
+PUT http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/members/{{aliMembers.response.body.$.members[0].id}}/working-hours
+Content-Type: application/json
+Authorization: Bearer {{loginMehmet.response.body.accessToken}}
+
+{ "hours": [] }

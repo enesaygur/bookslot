@@ -17,6 +17,7 @@ import { sendInvite } from "../controllers/inviteController";
 import { createInviteSchema } from "../schemas/inviteSchema";
 import { listMembers, removeMember } from "../controllers/memberController";
 import serviceRouter from "./serviceRoutes";
+import memberRouter from "./memberRoutes";
 
 const router = Router();
 
@@ -53,5 +54,6 @@ router.delete(
 );
 
 router.use("/:businessId/services", serviceRouter);
+router.use("/:businessId/members", memberRouter);
 
 export default router;
