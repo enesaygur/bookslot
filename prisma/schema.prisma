@@ -73,6 +73,7 @@ model Member {
   business         Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
   createdAt        DateTime          @default(now())
   workingIntervals WorkingInterval[]
+  timeOffs         TimeOff[]
 
   @@unique([businessId, userId])
   @@index([userId])
@@ -118,4 +119,16 @@ model WorkingInterval {
   createdAt   DateTime @default(now())
 
   @@index([memberId, dayOfWeek])
+}
+
+model TimeOff {
+  id        String   @id @default(uuid())
+  memberId  String
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@index([memberId, startDate])
 }

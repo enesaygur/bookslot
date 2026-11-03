@@ -2,16 +2,7 @@ import { AppError } from "../errors/AppError";
 import { prisma } from "../lib/prisma";
 import { formatTime, parseTime } from "../lib/time";
 import { ReplaceWorkingHoursInput } from "../schemas/workingHoursSchema";
-
-async function assertMemberInBusiness(businessId: string, memberId: string) {
-  const member = await prisma.member.findFirst({
-    where: { id: memberId, businessId },
-    select: { id: true },
-  });
-  if (!member) {
-    throw new AppError(404, "Member not found", "NOT_FOUND");
-  }
-}
+import { assertMemberInBusiness } from "./memberService";
 
 export async function findWorkingHours(businessId: string, memberId: string) {
   await assertMemberInBusiness(businessId, memberId);

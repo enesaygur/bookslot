@@ -391,3 +391,60 @@ Content-Type: application/json
 Authorization: Bearer {{loginMehmet.response.body.accessToken}}
 
 { "hours": [] }
+
+
+
+
+
+
+### 1) İzin ekle, 3 gün (201)
+# @name createTimeOffReq
+POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/members/{{aliMembers.response.body.$.members[0].id}}/time-off
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "startDate": "2026-12-24", "endDate": "2026-12-26", "reason": "Yilbasi tatili" }
+
+### 2) Tek günlük izin (201)
+POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/members/{{aliMembers.response.body.$.members[0].id}}/time-off
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "startDate": "2026-12-31", "endDate": "2026-12-31" }
+
+### 3) Bitiş başlangıçtan önce (400)
+POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/members/{{aliMembers.response.body.$.members[0].id}}/time-off
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "startDate": "2026-12-26", "endDate": "2026-12-24" }
+
+### 4) Olmayan gün (400)
+POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/members/{{aliMembers.response.body.$.members[0].id}}/time-off
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "startDate": "2026-02-30", "endDate": "2026-03-02" }
+
+### 5) Yanlış biçim (400)
+POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/members/{{aliMembers.response.body.$.members[0].id}}/time-off
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "startDate": "24.12.2026", "endDate": "26.12.2026" }
+
+### 6) Liste (200, başlangıç tarihine göre sıralı)
+GET http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/members/{{aliMembers.response.body.$.members[0].id}}/time-off
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### 7) Mehmet (STAFF) Ali'nin iznini silmeye çalışır (403)
+DELETE http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/members/{{aliMembers.response.body.$.members[0].id}}/time-off/{{createTimeOffReq.response.body.$.timeOff.id}}
+Authorization: Bearer {{loginMehmet.response.body.accessToken}}
+
+### 8) IDOR: Mehmet kendi işletmesinin URL'siyle Ali'nin iznini silmeye çalışır (404)
+DELETE http://localhost:3000/businesses/{{createMehmetBiz.response.body.$.business.id}}/members/{{aliMembers.response.body.$.members[0].id}}/time-off/{{createTimeOffReq.response.body.$.timeOff.id}}
+Authorization: Bearer {{loginMehmet.response.body.accessToken}}
+
+### 9) Ali kendi iznini siler (204)
+DELETE http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/members/{{aliMembers.response.body.$.members[0].id}}/time-off/{{createTimeOffReq.response.body.$.timeOff.id}}
+Authorization: Bearer {{login.response.body.accessToken}}

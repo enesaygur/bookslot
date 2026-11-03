@@ -9,6 +9,12 @@ import {
 import { requireSelfOrOwner } from "../middleware/requireSelfOrOwner";
 import { validate } from "../middleware/validate";
 import { replaceWorkingHoursSchema } from "../schemas/workingHoursSchema";
+import {
+  createTimeOff,
+  deleteTimeOff,
+  listTimeOff,
+} from "../controllers/timeOffController";
+import { createTimeOffSchema } from "../schemas/timeOffSchema";
 
 const router = Router({ mergeParams: true });
 
@@ -25,5 +31,18 @@ router.put(
   validate(replaceWorkingHoursSchema),
   putWorkingHours,
 );
-
+router.get("/:memberId/time-off", anyMember, listTimeOff);
+router.post(
+  "/:memberId/time-off",
+  anyMember,
+  requireSelfOrOwner,
+  validate(createTimeOffSchema),
+  createTimeOff,
+);
+router.delete(
+  "/:memberId/time-off/:timeOffId",
+  anyMember,
+  requireSelfOrOwner,
+  deleteTimeOff,
+);
 export default router;

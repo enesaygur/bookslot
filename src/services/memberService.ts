@@ -24,3 +24,16 @@ export async function removeStaffMember(businessId: string, memberId: string) {
     throw new AppError(404, "Member not found", "NOT_FOUND");
   }
 }
+
+export async function assertMemberInBusiness(
+  businessId: string,
+  memberId: string,
+) {
+  const member = await prisma.member.findFirst({
+    where: { id: memberId, businessId },
+    select: { id: true },
+  });
+  if (!member) {
+    throw new AppError(404, "Member not found", "NOT_FOUND");
+  }
+}
