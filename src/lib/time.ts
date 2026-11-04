@@ -21,3 +21,19 @@ export function isRealDate(value: string): boolean {
   const date = parseDate(value);
   return !Number.isNaN(date.getTime()) && formatDate(date) === value;
 }
+
+export function isValidTimeZone(value: string): boolean {
+  if (value !== "UTC" && !value.includes("/")) return false;
+
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: value });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function canonicalTimeZone(value: string): string {
+  return new Intl.DateTimeFormat("en-US", { timeZone: value }).resolvedOptions()
+    .timeZone;
+}

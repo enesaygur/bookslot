@@ -56,6 +56,7 @@ model Business {
   id        String   @id @default(uuid())
   name      String
   slug      String   @unique
+  timezone  String   @default("Europe/Istanbul")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

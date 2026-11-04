@@ -1,7 +1,18 @@
 import { MemberRole, Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
-import type { CreateBusinessInput } from "../schemas/businessSchema";
+import type {
+  CreateBusinessInput,
+  UpdateBusinessInput,
+} from "../schemas/businessSchema";
 import { AppError } from "../errors/AppError";
+
+const businessSelect = {
+  id: true,
+  name: true,
+  slug: true,
+  timezone: true,
+  createdAt: true,
+} as const;
 
 export async function createBusiness(
   userId: string,
@@ -12,9 +23,10 @@ export async function createBusiness(
       data: {
         name: input.name,
         slug: input.slug,
+        timezone: input.timezone,
         members: { create: { userId, role: MemberRole.OWNER } },
       },
-      select: { id: true, name: true, slug: true, createdAt: true },
+      select: businessSelect,
     });
   } catch (err) {
     if (
@@ -41,13 +53,6 @@ export async function listMyBusiness(userId: string) {
   return memberships.map((m) => ({ ...m.business, role: m.role }));
 }
 
-const businessSelect = {
-  id: true,
-  name: true,
-  slug: true,
-  createdAt: true,
-} as const;
-
 export async function getBusiness(businessId: string) {
   return prisma.business.findUniqueOrThrow({
     where: { id: businessId },
@@ -55,10 +60,13 @@ export async function getBusiness(businessId: string) {
   });
 }
 
-export async function renameBusiness(businessId: string, name: string) {
+export async function updateBusiness(
+  businessId: string,
+  input: UpdateBusinessInput,
+) {
   return prisma.business.update({
     where: { id: businessId },
-    data: { name },
+    data: input,
     select: businessSelect,
   });
 }

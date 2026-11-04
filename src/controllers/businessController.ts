@@ -3,7 +3,7 @@ import {
   createBusiness,
   getBusiness,
   listMyBusiness,
-  renameBusiness,
+  updateBusiness,
 } from "../services/businessService";
 
 export async function create(req: Request, res: Response) {
@@ -21,7 +21,7 @@ export async function getOne(req: Request, res: Response) {
   res.json({ business });
 }
 
-export async function rename(req: Request, res: Response) {
-  const business = await renameBusiness(req.member!.businessId, req.body.name);
+export async function update(req: Request, res: Response) {
+  const business = await updateBusiness(req.member!.businessId, req.body);
   res.json({ business });
 }

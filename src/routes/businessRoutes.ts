@@ -8,7 +8,7 @@ import {
   create,
   getOne,
   listMine,
-  rename,
+  update,
 } from "../controllers/businessController";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { requireRole } from "../middleware/requireRole";
@@ -34,7 +34,7 @@ router.patch(
   "/:businessId",
   requireRole(MemberRole.OWNER),
   validate(updateBusinessSchema),
-  rename,
+  update,
 );
 router.post(
   "/:businessId/invites",

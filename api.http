@@ -448,3 +448,52 @@ Authorization: Bearer {{loginMehmet.response.body.accessToken}}
 ### 9) Ali kendi iznini siler (204)
 DELETE http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/members/{{aliMembers.response.body.$.members[0].id}}/time-off/{{createTimeOffReq.response.body.$.timeOff.id}}
 Authorization: Bearer {{login.response.body.accessToken}}
+
+
+
+
+### 1) Berlin saat dilimli yeni işletme (201, timezone Europe/Berlin)
+POST http://localhost:3000/businesses
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "name": "Berlin Salon", "slug": "berlin-salon", "timezone": "Europe/Berlin" }
+
+### 2) Saat dilimi verilmeden oluşturma, varsayılan (201, Europe/Istanbul)
+POST http://localhost:3000/businesses
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "name": "Varsayilan Salon", "slug": "varsayilan-salon" }
+
+### 3) Olmayan saat dilimi (400)
+PATCH http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "timezone": "Mars/Phobos" }
+
+### 4) Fark biçimi kabul edilmez (400)
+PATCH http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "timezone": "+03:00" }
+
+### 5) Küçük harfle yazılan ad düzeltilir (200, Europe/Istanbul)
+PATCH http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "timezone": "europe/istanbul" }
+
+### 6) Boş gövde (400)
+PATCH http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{}
+
+### 7) Detay: timezone alanı var (200)
+GET http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}
+Authorization: Bearer {{login.response.body.accessToken}}
