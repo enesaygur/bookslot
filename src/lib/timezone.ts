@@ -26,3 +26,7 @@ export function zoneToUtc(
 export function isoWeekday(date: string): number {
   return DateTime.fromISO(date, { zone: "UTC" }).weekday;
 }
+
+export function formatLocalTime(date: Date, timeZone: string): string {
+  return DateTime.fromJSDate(date, { zone: timeZone }).toFormat("HH:mm");
+}

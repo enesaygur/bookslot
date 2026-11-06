@@ -497,3 +497,72 @@ Authorization: Bearer {{login.response.body.accessToken}}
 ### 7) Detay: timezone alanı var (200)
 GET http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}
 Authorization: Bearer {{login.response.body.accessToken}}
+
+
+
+### 1) Ali'nin programı: Pazartesi-Cuma 09-12 ve 13-18 (200)
+PUT http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/members/{{aliMembers.response.body.$.members[0].id}}/working-hours
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{
+  "hours": [
+    { "dayOfWeek": 1, "start": "09:00", "end": "12:00" },
+    { "dayOfWeek": 1, "start": "13:00", "end": "18:00" },
+    { "dayOfWeek": 2, "start": "09:00", "end": "12:00" },
+    { "dayOfWeek": 2, "start": "13:00", "end": "18:00" },
+    { "dayOfWeek": 3, "start": "09:00", "end": "12:00" },
+    { "dayOfWeek": 3, "start": "13:00", "end": "18:00" },
+    { "dayOfWeek": 4, "start": "09:00", "end": "12:00" },
+    { "dayOfWeek": 4, "start": "13:00", "end": "18:00" },
+    { "dayOfWeek": 5, "start": "09:00", "end": "12:00" },
+    { "dayOfWeek": 5, "start": "13:00", "end": "18:00" }
+  ]
+}
+
+### 2) Slot testi için 30 dakikalık hizmet (201)
+# @name serviceForSlots
+POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/services
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "name": "Sac Kesimi 30", "durationMinutes": 30, "priceCents": 25000 }
+
+### 3) Salı 2026-11-10, 30 slot bekleniyor (200)
+GET http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/availability?date=2026-11-10&serviceId={{serviceForSlots.response.body.$.service.id}}&memberId={{aliMembers.response.body.$.members[0].id}}
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### 4) Cumartesi 2026-11-14, programı yok (200, slots boş)
+GET http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/availability?date=2026-11-14&serviceId={{serviceForSlots.response.body.$.service.id}}&memberId={{aliMembers.response.body.$.members[0].id}}
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### 5) Perşembe 2026-11-12 için izin ekle (201)
+POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/members/{{aliMembers.response.body.$.members[0].id}}/time-off
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "startDate": "2026-11-12", "endDate": "2026-11-12", "reason": "Test izni" }
+
+### 6) İzinli gün 2026-11-12 (200, slots boş)
+GET http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/availability?date=2026-11-12&serviceId={{serviceForSlots.response.body.$.service.id}}&memberId={{aliMembers.response.body.$.members[0].id}}
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### 7) Geçmiş gün 2026-11-02 (200, slots boş)
+GET http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/availability?date=2026-11-02&serviceId={{serviceForSlots.response.body.$.service.id}}&memberId={{aliMembers.response.body.$.members[0].id}}
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### 8) Geçersiz tarih (400)
+GET http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/availability?date=2026-02-30&serviceId={{serviceForSlots.response.body.$.service.id}}&memberId={{aliMembers.response.body.$.members[0].id}}
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### 9) serviceId eksik (400)
+GET http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/availability?date=2026-11-10&memberId={{aliMembers.response.body.$.members[0].id}}
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### 10) Olmayan hizmet (404)
+GET http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/availability?date=2026-11-10&serviceId=00000000-0000-4000-8000-000000000000&memberId={{aliMembers.response.body.$.members[0].id}}
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### 11) IDOR: Mehmet kendi işletmesinin URL'siyle Ali'nin personelini sorgular (404)
+GET http://localhost:3000/businesses/{{createMehmetBiz.response.body.$.business.id}}/availability?date=2026-11-10&serviceId={{serviceForSlots.response.body.$.service.id}}&memberId={{aliMembers.response.body.$.members[0].id}}
+Authorization: Bearer {{loginMehmet.response.body.accessToken}}

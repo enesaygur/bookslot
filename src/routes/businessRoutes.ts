@@ -18,6 +18,9 @@ import { createInviteSchema } from "../schemas/inviteSchema";
 import { listMembers, removeMember } from "../controllers/memberController";
 import serviceRouter from "./serviceRoutes";
 import memberRouter from "./memberRoutes";
+import { availabilityQuerySchema } from "../schemas/availabilitySchema";
+import { showAvailability } from "../controllers/availabilityController";
+import { validateQuery } from "../middleware/validateQuery";
 
 const router = Router();
 
@@ -51,6 +54,13 @@ router.delete(
   "/:businessId/members/:memberId",
   requireRole(MemberRole.OWNER),
   removeMember,
+);
+
+router.get(
+  "/:businessId/availability",
+  requireRole(MemberRole.OWNER, MemberRole.STAFF),
+  validateQuery(availabilityQuerySchema),
+  showAvailability,
 );
 
 router.use("/:businessId/services", serviceRouter);
