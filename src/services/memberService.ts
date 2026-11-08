@@ -1,4 +1,4 @@
-import { MemberRole } from "@prisma/client";
+import { MemberRole, Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { AppError } from "../errors/AppError";
 
@@ -16,12 +16,26 @@ export async function listBusinessMembers(businessId: string) {
 }
 
 export async function removeStaffMember(businessId: string, memberId: string) {
-  const result = await prisma.member.deleteMany({
-    where: { id: memberId, businessId, role: MemberRole.STAFF },
-  });
+  try {
+    const result = await prisma.member.deleteMany({
+      where: { id: memberId, businessId, role: MemberRole.STAFF },
+    });
 
-  if (result.count === 0) {
-    throw new AppError(404, "Member not found", "NOT_FOUND");
+    if (result.count === 0) {
+      throw new AppError(404, "Member not found", "NOT_FOUND");
+    }
+  } catch (err) {
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === "P2003"
+    ) {
+      throw new AppError(
+        409,
+        "Member has appointments and cannot be removed",
+        "MEMBER_HAS_APPOINTMENTS",
+      );
+    }
+    throw err;
   }
 }
 
