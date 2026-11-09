@@ -21,7 +21,7 @@ import memberRouter from "./memberRoutes";
 import { availabilityQuerySchema } from "../schemas/availabilitySchema";
 import { showAvailability } from "../controllers/availabilityController";
 import { validateQuery } from "../middleware/validateQuery";
-
+import appointmentRouter from "./appointmentRoutes";
 const router = Router();
 
 router.use(authMiddleware);
@@ -65,5 +65,6 @@ router.get(
 
 router.use("/:businessId/services", serviceRouter);
 router.use("/:businessId/members", memberRouter);
+router.use("/:businessId/appointments", appointmentRouter);
 
 export default router;

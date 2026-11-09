@@ -566,3 +566,122 @@ Authorization: Bearer {{login.response.body.accessToken}}
 ### 11) IDOR: Mehmet kendi işletmesinin URL'siyle Ali'nin personelini sorgular (404)
 GET http://localhost:3000/businesses/{{createMehmetBiz.response.body.$.business.id}}/availability?date=2026-11-10&serviceId={{serviceForSlots.response.body.$.service.id}}&memberId={{aliMembers.response.body.$.members[0].id}}
 Authorization: Bearer {{loginMehmet.response.body.accessToken}}
+
+
+
+
+### 1) Pazartesi 2026-11-16 müsait slotlar
+# @name availabilityMon
+GET http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/availability?date=2026-11-16&serviceId={{serviceForSlots.response.body.$.service.id}}&memberId={{aliMembers.response.body.$.members[0].id}}
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### 2) İlk slota randevu al (201)
+# @name bookingReq
+POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/appointments
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{
+  "memberId": "{{aliMembers.response.body.$.members[0].id}}",
+  "serviceId": "{{serviceForSlots.response.body.$.service.id}}",
+   "startsAt": "2026-11-16T06:00:00.000Z",
+  "customerName": "Veli Musteri",
+  "customerEmail": "Veli@Example.com",
+  "customerPhone": "05551234567"
+}
+
+### 3) Aynı slot tekrar (409 SLOT_UNAVAILABLE)
+POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/appointments
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{
+  "memberId": "{{aliMembers.response.body.$.members[0].id}}",
+  "serviceId": "{{serviceForSlots.response.body.$.service.id}}",
+  "startsAt": "{{availabilityMon.response.body.$.slots[0].start}}",
+  "customerName": "Baska Musteri",
+  "customerEmail": "baska@example.com"
+}
+
+### 4) Müsaitliği tekrar sor: 09:00 ve 09:15 gitmiş, ilk slot 09:30 olmalı
+GET http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/availability?date=2026-11-16&serviceId={{serviceForSlots.response.body.$.service.id}}&memberId={{aliMembers.response.body.$.members[0].id}}
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### 5) Izgaraya hizalı olmayan saat (409)
+POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/appointments
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{
+  "memberId": "{{aliMembers.response.body.$.members[0].id}}",
+  "serviceId": "{{serviceForSlots.response.body.$.service.id}}",
+  "startsAt": "2026-11-17T06:07:00.000Z",
+  "customerName": "Test Musteri",
+  "customerEmail": "test@example.com"
+}
+
+### 6) Çalışma saati dışı, 06:00 yerel (409)
+POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/appointments
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{
+  "memberId": "{{aliMembers.response.body.$.members[0].id}}",
+  "serviceId": "{{serviceForSlots.response.body.$.service.id}}",
+  "startsAt": "2026-11-17T03:00:00.000Z",
+  "customerName": "Test Musteri",
+  "customerEmail": "test@example.com"
+}
+
+### 7) İzinli gün 2026-11-12 09:00 yerel (409)
+POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/appointments
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{
+  "memberId": "{{aliMembers.response.body.$.members[0].id}}",
+  "serviceId": "{{serviceForSlots.response.body.$.service.id}}",
+  "startsAt": "2026-11-12T06:00:00.000Z",
+  "customerName": "Test Musteri",
+  "customerEmail": "test@example.com"
+}
+
+### 8) Geçersiz zaman biçimi, saat farkıyla (400)
+POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/appointments
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{
+  "memberId": "{{aliMembers.response.body.$.members[0].id}}",
+  "serviceId": "{{serviceForSlots.response.body.$.service.id}}",
+  "startsAt": "2026-11-17T09:00:00+03:00",
+  "customerName": "Test Musteri",
+  "customerEmail": "test@example.com"
+}
+
+### 9) Geçersiz e-posta (400)
+POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/appointments
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{
+  "memberId": "{{aliMembers.response.body.$.members[0].id}}",
+  "serviceId": "{{serviceForSlots.response.body.$.service.id}}",
+  "startsAt": "2026-11-17T06:00:00.000Z",
+  "customerName": "Test Musteri",
+  "customerEmail": "bozuk"
+}
+
+
+### 10) IDOR: Mehmet kendi işletmesinde Ali'nin personeliyle randevu yazmaya çalışır (404)
+POST http://localhost:3000/businesses/{{mehmetBusinesses.response.body.$.businesses[0].id}}/appointments
+Content-Type: application/json
+Authorization: Bearer {{loginMehmet.response.body.accessToken}}
+
+{
+  "memberId": "{{aliMembers.response.body.$.members[0].id}}",
+  "serviceId": "{{serviceForSlots.response.body.$.service.id}}",
+  "startsAt": "2026-11-17T06:00:00.000Z",
+  "customerName": "Test Musteri",
+  "customerEmail": "test@example.com"
+}

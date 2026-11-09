@@ -1,8 +1,14 @@
 import { AppError } from "../errors/AppError";
+import { overlappingActive } from "../lib/appointmentWhere";
 import { prisma } from "../lib/prisma";
 import { computeSlots, type BusyPeriod } from "../lib/slots";
 import { parseDate } from "../lib/time";
-import { formatLocalTime, isoWeekday } from "../lib/timezone";
+import {
+  formatLocalTime,
+  isoWeekday,
+  nextDate,
+  zoneToUtc,
+} from "../lib/timezone";
 import { type AvailabilityQuery } from "../schemas/availabilitySchema";
 import { assertMemberInBusiness } from "./memberService";
 
@@ -11,7 +17,18 @@ async function findBusyPeriods(
   date: string,
   timeZone: string,
 ): Promise<BusyPeriod[]> {
-  return [];
+  const dayStart = zoneToUtc(date, 0, timeZone);
+  const dayEnd = zoneToUtc(nextDate(date), 0, timeZone);
+
+  const rows = await prisma.appointment.findMany({
+    where: overlappingActive(memberId, dayStart, dayEnd),
+    select: { startsAt: true, endsAt: true },
+  });
+
+  return rows.map((row) => ({
+    start: row.startsAt,
+    end: row.endsAt,
+  }));
 }
 
 export async function getAvailability(

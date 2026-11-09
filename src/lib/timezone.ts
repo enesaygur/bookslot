@@ -30,3 +30,19 @@ export function isoWeekday(date: string): number {
 export function formatLocalTime(date: Date, timeZone: string): string {
   return DateTime.fromJSDate(date, { zone: timeZone }).toFormat("HH:mm");
 }
+
+function isoDateOrThrow(value: DateTime): string {
+  const result = value.toISODate();
+  if (!result) throw new Error("Invalid date");
+  return result;
+}
+
+export function toLocalDate(date: Date, timeZone: string): string {
+  return isoDateOrThrow(DateTime.fromJSDate(date, { zone: timeZone }));
+}
+
+export function nextDate(date: string): string {
+  return isoDateOrThrow(
+    DateTime.fromISO(date, { zone: "UTC" }).plus({ days: 1 }),
+  );
+}
