@@ -6,6 +6,7 @@ import { assertMemberInBusiness } from "./memberService";
 import { getAvailability } from "./availabilityService";
 import { toLocalDate } from "../lib/timezone";
 import { overlappingActive } from "../lib/appointmentWhere";
+import { isOverlapViolation } from "../lib/dbErrors";
 
 const MS_PER_MINUTE = 60_000;
 
@@ -68,30 +69,36 @@ export async function bookAppointment(
     throw new AppError(409, "Slot is not available", "SLOT_UNAVAILABLE");
   }
 
-  return prisma.$transaction(async (tx) => {
-    const conflict = await tx.appointment.findFirst({
-      where: overlappingActive(input.memberId, startsAt, endsAt),
-      select: { id: true },
-    });
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const conflict = await tx.appointment.findFirst({
+        where: overlappingActive(input.memberId, startsAt, endsAt),
+        select: { id: true },
+      });
+      if (conflict) {
+        throw new AppError(409, "Slot is not available", "SLOT_UNAVAILABLE");
+      }
 
-    if (conflict) {
+      return tx.appointment.create({
+        data: {
+          businessId,
+          memberId: input.memberId,
+          serviceId: input.serviceId,
+          startsAt,
+          endsAt,
+          priceCents: service.priceCents,
+          customerName: input.customerName,
+          customerEmail: input.customerEmail,
+          customerPhone: input.customerPhone,
+          notes: input.notes,
+        },
+        select: appointmentSelect,
+      });
+    });
+  } catch (err) {
+    if (isOverlapViolation(err)) {
       throw new AppError(409, "Slot is not available", "SLOT_UNAVAILABLE");
     }
-
-    return tx.appointment.create({
-      data: {
-        businessId,
-        memberId: input.memberId,
-        serviceId: input.serviceId,
-        startsAt,
-        endsAt,
-        priceCents: service.priceCents,
-        customerName: input.customerName,
-        customerEmail: input.customerEmail,
-        customerPhone: input.customerPhone,
-        notes: input.notes,
-      },
-      select: appointmentSelect,
-    });
-  });
+    throw err;
+  }
 }
