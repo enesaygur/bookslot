@@ -11,3 +11,6 @@ export const createAppointmentSchema = z.object({
 });
 
 export type CreateAppointmentInput = z.infer<typeof createAppointmentSchema>;
+export const rescheduleAppointmentSchema = z.object({
+  startsAt: z.string().datetime(),
+});

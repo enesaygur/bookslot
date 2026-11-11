@@ -685,3 +685,95 @@ Authorization: Bearer {{loginMehmet.response.body.accessToken}}
   "customerName": "Test Musteri",
   "customerEmail": "test@example.com"
 }
+
+
+
+### A) 09:00'a randevu (201)
+# @name apptA
+POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/appointments
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{
+  "memberId": "{{aliMembers.response.body.$.members[0].id}}",
+  "serviceId": "{{serviceForSlots.response.body.$.service.id}}",
+  "startsAt": "2026-11-18T06:00:00.000Z",
+  "customerName": "Test A",
+  "customerEmail": "a@example.com"
+}
+
+### B) 10:00'a randevu (201)
+# @name apptB
+POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/appointments
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{
+  "memberId": "{{aliMembers.response.body.$.members[0].id}}",
+  "serviceId": "{{serviceForSlots.response.body.$.service.id}}",
+  "startsAt": "2026-11-18T07:00:00.000Z",
+  "customerName": "Test B",
+  "customerEmail": "b@example.com"
+}
+
+### 1) A'yı 09:15'e taşı: kendi eski saatiyle örtüşüyor ama sorun değil (200)
+PATCH http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/appointments/{{apptA.response.body.$.appointment.id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "startsAt": "2026-11-18T06:15:00.000Z" }
+
+### 2) A'yı 09:45'e taşı: B ile (10:00-10:30) örtüşüyor (409 SLOT_UNAVAILABLE)
+PATCH http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/appointments/{{apptA.response.body.$.appointment.id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "startsAt": "2026-11-18T06:45:00.000Z" }
+
+### 3) A'yı 09:30'a taşı: B'nin başlangıcına değiyor, uç uca serbest (200)
+PATCH http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/appointments/{{apptA.response.body.$.appointment.id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "startsAt": "2026-11-18T06:30:00.000Z" }
+
+### 4) B'yi iptal et (200, status CANCELLED, cancelledAt dolu)
+POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/appointments/{{apptB.response.body.$.appointment.id}}/cancel
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### 5) B'yi tekrar iptal et (200, aynı sonuç, idempotent)
+POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/appointments/{{apptB.response.body.$.appointment.id}}/cancel
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### 6) A'yı 09:45'e taşı: B iptal olduğu için artık engel değil (200)
+PATCH http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/appointments/{{apptA.response.body.$.appointment.id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "startsAt": "2026-11-18T06:45:00.000Z" }
+
+### 7) İptal edilmiş B'yi taşımaya çalış (409 APPOINTMENT_CANCELLED)
+PATCH http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/appointments/{{apptB.response.body.$.appointment.id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "startsAt": "2026-11-18T08:00:00.000Z" }
+
+### 8) Bozuk startsAt (400)
+PATCH http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/appointments/{{apptA.response.body.$.appointment.id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "startsAt": "yarin" }
+
+### 9) Mehmet (STAFF), Ali'ya atanmış randevuyu iptal etmeye çalışır (403)
+POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/appointments/{{apptA.response.body.$.appointment.id}}/cancel
+Authorization: Bearer {{loginMehmet.response.body.accessToken}}
+
+### 10) IDOR: Mehmet kendi işletmesinin URL'siyle Ali'nin randevusunu iptal etmeye çalışır (404)
+POST http://localhost:3000/businesses/{{mehmetBusinesses.response.body.$.businesses[0].id}}/appointments/{{apptA.response.body.$.appointment.id}}/cancel
+Authorization: Bearer {{loginMehmet.response.body.accessToken}}
+
+### A'yı iptal et, geçmişteki randevu (409 APPOINTMENT_IN_PAST)
+POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/appointments/{{apptA.response.body.$.appointment.id}}/cancel
+Authorization: Bearer {{login.response.body.accessToken}}
