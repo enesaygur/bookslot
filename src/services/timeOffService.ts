@@ -3,6 +3,8 @@ import { prisma } from "../lib/prisma";
 import { formatDate, parseDate } from "../lib/time";
 import { createTimeOffInput } from "../schemas/timeOffSchema";
 import { AppError } from "../errors/AppError";
+import { overlappingActive } from "../lib/appointmentWhere";
+import { nextDate, zoneToUtc } from "../lib/timezone";
 
 const timeOffSelect = {
   id: true,
@@ -52,7 +54,29 @@ export async function addTimeOff(
     },
     select: timeOffSelect,
   });
-  return toDto(row);
+
+  const business = await prisma.business.findUniqueOrThrow({
+    where: { id: businessId },
+    select: { timezone: true },
+  });
+
+  const conflicts = await prisma.appointment.findMany({
+    where: overlappingActive(
+      memberId,
+      zoneToUtc(input.startDate, 0, business.timezone),
+      zoneToUtc(nextDate(input.endDate), 0, business.timezone),
+    ),
+    select: {
+      id: true,
+      startsAt: true,
+      endsAt: true,
+      customerName: true,
+      customerEmail: true,
+    },
+    orderBy: { startsAt: "asc" },
+  });
+
+  return { timeOff: toDto(row), conflicts };
 }
 
 export async function removeTimeOff(

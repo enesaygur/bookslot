@@ -14,12 +14,12 @@ export async function listTimeOff(req: Request, res: Response) {
 }
 
 export async function createTimeOff(req: Request, res: Response) {
-  const timeOff = await addTimeOff(
+  const result = await addTimeOff(
     req.member!.businessId,
     req.params.memberId as string,
     req.body,
   );
-  res.status(201).json({ timeOff });
+  res.status(201).json(result);
 }
 
 export async function deleteTimeOff(req: Request, res: Response) {
