@@ -8,5 +8,5 @@ export async function showAvailability(req: Request, res: Response) {
     res.locals.query as AvailabilityQuery,
   );
 
-  res.json({ result });
+  res.json(result);
 }
