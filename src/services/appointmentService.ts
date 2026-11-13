@@ -1,12 +1,19 @@
-import { AppointmentStatus, type Appointment } from "@prisma/client";
+import {
+  AppointmentStatus,
+  MemberRole,
+  type Appointment,
+} from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { AppError } from "../errors/AppError";
-import { toLocalDate } from "../lib/timezone";
+import { formatLocalTime, nextDate, toLocalDate, zoneToUtc } from "../lib/timezone";
 import { overlappingActive } from "../lib/appointmentWhere";
 import { isOverlapViolation } from "../lib/dbErrors";
 import { assertMemberInBusiness } from "./memberService";
 import { computeDayAvailability } from "./availabilityService";
-import type { CreateAppointmentInput } from "../schemas/appointmentSchema";
+import type {
+  CreateAppointmentInput,
+  ListAppointmentsQuery,
+} from "../schemas/appointmentSchema";
 
 const MS_PER_MINUTE = 60_000;
 
@@ -55,7 +62,9 @@ export async function bookAppointment(
   });
 
   const startsAt = new Date(input.startsAt);
-  const endsAt = new Date(startsAt.getTime() + service.durationMinutes * MS_PER_MINUTE);
+  const endsAt = new Date(
+    startsAt.getTime() + service.durationMinutes * MS_PER_MINUTE,
+  );
 
   const slots = await computeDayAvailability({
     memberId: input.memberId,
@@ -96,7 +105,10 @@ export async function bookAppointment(
   }
 }
 
-export async function cancelAppointment(appointment: Appointment, now: Date = new Date()) {
+export async function cancelAppointment(
+  appointment: Appointment,
+  now: Date = new Date(),
+) {
   if (appointment.status === AppointmentStatus.CANCELLED) {
     return prisma.appointment.findUniqueOrThrow({
       where: { id: appointment.id },
@@ -105,7 +117,11 @@ export async function cancelAppointment(appointment: Appointment, now: Date = ne
   }
 
   if (appointment.startsAt <= now) {
-    throw new AppError(409, "Past appointments cannot be cancelled", "APPOINTMENT_IN_PAST");
+    throw new AppError(
+      409,
+      "Past appointments cannot be cancelled",
+      "APPOINTMENT_IN_PAST",
+    );
   }
 
   return prisma.appointment.update({
@@ -121,10 +137,18 @@ export async function rescheduleAppointment(
   now: Date = new Date(),
 ) {
   if (appointment.status === AppointmentStatus.CANCELLED) {
-    throw new AppError(409, "Cancelled appointments cannot be rescheduled", "APPOINTMENT_CANCELLED");
+    throw new AppError(
+      409,
+      "Cancelled appointments cannot be rescheduled",
+      "APPOINTMENT_CANCELLED",
+    );
   }
   if (appointment.startsAt <= now) {
-    throw new AppError(409, "Past appointments cannot be rescheduled", "APPOINTMENT_IN_PAST");
+    throw new AppError(
+      409,
+      "Past appointments cannot be rescheduled",
+      "APPOINTMENT_IN_PAST",
+    );
   }
 
   const business = await prisma.business.findUniqueOrThrow({
@@ -132,7 +156,8 @@ export async function rescheduleAppointment(
     select: { timezone: true },
   });
 
-  const durationMs = appointment.endsAt.getTime() - appointment.startsAt.getTime();
+  const durationMs =
+    appointment.endsAt.getTime() - appointment.startsAt.getTime();
   const startsAt = new Date(startsAtIso);
   const endsAt = new Date(startsAt.getTime() + durationMs);
 
@@ -149,7 +174,12 @@ export async function rescheduleAppointment(
   try {
     return await prisma.$transaction(async (tx) => {
       const conflict = await tx.appointment.findFirst({
-        where: overlappingActive(appointment.memberId, startsAt, endsAt, appointment.id),
+        where: overlappingActive(
+          appointment.memberId,
+          startsAt,
+          endsAt,
+          appointment.id,
+        ),
         select: { id: true },
       });
       if (conflict) throw slotUnavailable();
@@ -164,4 +194,47 @@ export async function rescheduleAppointment(
     if (isOverlapViolation(err)) throw slotUnavailable();
     throw err;
   }
+}
+
+export async function findAppointments(
+  actor: {
+    id: string;
+    role: MemberRole;
+    businessId: string;
+  },
+  query: ListAppointmentsQuery,
+) {
+  const business = await prisma.business.findUniqueOrThrow({
+    where: { id: actor.businessId },
+    select: { timezone: true },
+  });
+
+  const timeZone = business.timezone;
+  const memberId = actor.role === MemberRole.STAFF ? actor.id : query.memberId;
+
+  const rows = await prisma.appointment.findMany({
+    where: {
+      businessId: actor.businessId,
+      ...(memberId ? { memberId } : {}),
+      startsAt: {
+        gte: zoneToUtc(query.from, 0, timeZone),
+        lt: zoneToUtc(nextDate(query.to), 0, timeZone),
+      },
+    },
+    select: {
+      ...appointmentSelect,
+      service: { select: { name: true } },
+      member: { select: { user: { select: { name: true } } } },
+    },
+    orderBy: { startsAt: "asc" },
+    take: 500,
+  });
+
+  return rows.map(({ service, member, ...rest }) => ({
+    ...rest,
+    serviceName: service.name,
+    memberName: member.user.name,
+    localDate: toLocalDate(rest.startsAt, timeZone),
+    localStart: formatLocalTime(rest.startsAt, timeZone),
+  }));
 }

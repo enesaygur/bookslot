@@ -6,15 +6,27 @@ import { requireAppointment } from "../middleware/requireAppointment";
 import { requireOwnerOrAssignee } from "../middleware/requireOwnerOrAssignee";
 import {
   createAppointmentSchema,
+  listAppointmentsQuerySchema,
   rescheduleAppointmentSchema,
 } from "../schemas/appointmentSchema";
-import { createAppointment, cancel, reschedule } from "../controllers/appointmentController";
+import {
+  createAppointment,
+  cancel,
+  reschedule,
+  listAppointments,
+} from "../controllers/appointmentController";
+import { validateQuery } from "../middleware/validateQuery";
 
 const router = Router({ mergeParams: true });
 
 const anyMember = requireRole(MemberRole.OWNER, MemberRole.STAFF);
 
-router.post("/", anyMember, validate(createAppointmentSchema), createAppointment);
+router.post(
+  "/",
+  anyMember,
+  validate(createAppointmentSchema),
+  createAppointment,
+);
 router.post(
   "/:appointmentId/cancel",
   anyMember,
@@ -29,6 +41,12 @@ router.patch(
   requireOwnerOrAssignee,
   validate(rescheduleAppointmentSchema),
   reschedule,
+);
+router.get(
+  "/",
+  anyMember,
+  validateQuery(listAppointmentsQuerySchema),
+  listAppointments,
 );
 
 export default router;
