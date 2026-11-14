@@ -4,7 +4,8 @@ import { AppError } from "./errors/AppError";
 import { errorHandler } from "./middleware/errorHandler";
 import authRouter from "./routes/authRoutes";
 import businessRouter from "./routes/businessRoutes";
-import inviteRouter from "./routes/inviteRoutes"
+import inviteRouter from "./routes/inviteRoutes";
+import publicRouter from "./routes/publicRoutes";
 import cookieParser from "cookie-parser";
 
 const app = express();
@@ -27,7 +28,8 @@ app.get("/health/db", async (_req, res) => {
 
 app.use("/auth", authRouter);
 app.use("/businesses", businessRouter);
-app.use("/invites", inviteRouter)
+app.use("/invites", inviteRouter);
+app.use("/public", publicRouter);
 
 app.use((_req, _res, next) => {
   next(new AppError(404, "Route not found", "NOT_FOUND"));
