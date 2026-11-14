@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import {
+  bookPublicAppointment,
   findPublicBusiness,
   getPublicAvailability,
 } from "../services/publicService";
@@ -17,4 +18,12 @@ export async function showPublicAvailability(req: Request, res: Response) {
   );
 
   res.json(result);
+}
+
+export async function createPublicAppointment(req: Request, res: Response) {
+  const appointment = await bookPublicAppointment(
+    req.params.slug as string,
+    req.body,
+  );
+  res.status(201).json({ appointment });
 }

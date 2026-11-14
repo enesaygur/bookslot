@@ -86,4 +86,47 @@ describe("public business info", () => {
       });
     expect(wrongService.status).toBe(404);
   });
+
+  it("books without authentication and limits upcoming appointments per email", async () => {
+    const f = await createBusinessFixture();
+    const date = DateTime.now().plus({ days: 7 }).toISODate() as string;
+
+    const availability = await request(app)
+      .get("/public/test-salon/availability")
+      .query({ date, serviceId: f.service.id, memberId: f.member.id });
+    const slots: { start: string }[] = availability.body.slots;
+
+    const book = (startsAt: string, email = "guest@example.com") =>
+      request(app).post("/public/test-salon/appointments").send({
+        memberId: f.member.id,
+        serviceId: f.service.id,
+        startsAt,
+        customerName: "Guest",
+        customerEmail: email,
+      });
+
+    const first = await book(slots[0].start);
+    expect(first.status).toBe(201);
+    expect(Object.keys(first.body.appointment).sort()).toEqual([
+      "endsAt",
+      "id",
+      "priceCents",
+      "startsAt",
+      "status",
+    ]);
+
+    const clash = await book(slots[0].start, "other@example.com");
+    expect(clash.status).toBe(409);
+
+    const results = [first.status];
+    for (const index of [2, 4, 6]) {
+      results.push((await book(slots[index].start)).status);
+    }
+    expect(results).toEqual([201, 201, 201, 429]);
+
+    const far = DateTime.now().plus({ days: 200 }).toUTC().toISO() as string;
+    const tooFar = await book(far, "late@example.com");
+    expect(tooFar.status).toBe(400);
+    expect(tooFar.body.error.code).toBe("DATE_TOO_FAR");
+  });
 });
