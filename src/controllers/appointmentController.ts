@@ -8,7 +8,10 @@ import {
 import { ListAppointmentsQuery } from "../schemas/appointmentSchema";
 
 export async function createAppointment(req: Request, res: Response) {
-  const appointment = await bookAppointment(req.member!.businessId, req.body);
+  const { appointment } = await bookAppointment(
+    req.member!.businessId,
+    req.body,
+  );
   res.status(201).json({ appointment });
 }
 

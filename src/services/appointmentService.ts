@@ -5,7 +5,12 @@ import {
 } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { AppError } from "../errors/AppError";
-import { formatLocalTime, nextDate, toLocalDate, zoneToUtc } from "../lib/timezone";
+import {
+  formatLocalTime,
+  nextDate,
+  toLocalDate,
+  zoneToUtc,
+} from "../lib/timezone";
 import { overlappingActive } from "../lib/appointmentWhere";
 import { isOverlapViolation } from "../lib/dbErrors";
 import { assertMemberInBusiness } from "./memberService";
@@ -14,6 +19,7 @@ import type {
   CreateAppointmentInput,
   ListAppointmentsQuery,
 } from "../schemas/appointmentSchema";
+import { generateToken, hashToken } from "../lib/token";
 
 const MS_PER_MINUTE = 60_000;
 
@@ -75,8 +81,10 @@ export async function bookAppointment(
   });
   if (!isOffered(slots, startsAt)) throw slotUnavailable();
 
+  const manageToken = generateToken();
+
   try {
-    return await prisma.$transaction(async (tx) => {
+    const appointment = await prisma.$transaction(async (tx) => {
       const conflict = await tx.appointment.findFirst({
         where: overlappingActive(input.memberId, startsAt, endsAt),
         select: { id: true },
@@ -95,10 +103,13 @@ export async function bookAppointment(
           customerEmail: input.customerEmail,
           customerPhone: input.customerPhone,
           notes: input.notes,
+          manageTokenHash: hashToken(manageToken),
         },
         select: appointmentSelect,
       });
     });
+
+    return { appointment, manageToken };
   } catch (err) {
     if (isOverlapViolation(err)) throw slotUnavailable();
     throw err;

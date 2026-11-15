@@ -69,7 +69,7 @@ async function findBusinessBySlug(slug: string) {
   return business;
 }
 
-function assertWithinHorizon(date: string, timeZone: string, now: Date) {
+export function assertWithinHorizon(date: string, timeZone: string, now: Date) {
   const lastBookableDate = toLocalDate(
     new Date(now.getTime() + MAX_DAYS_AHEAD * MS_PER_DAY),
     timeZone,
@@ -126,12 +126,17 @@ export async function bookPublicAppointment(
     );
   }
 
-  const appointment = await bookAppointment(business.id, input, now);
+  const { appointment, manageToken } = await bookAppointment(
+    business.id,
+    input,
+    now,
+  );
   return {
     id: appointment.id,
     startsAt: appointment.startsAt,
     endsAt: appointment.endsAt,
     status: appointment.status,
     priceCents: appointment.priceCents,
+    manageToken,
   };
 }

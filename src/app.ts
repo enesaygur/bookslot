@@ -6,6 +6,7 @@ import authRouter from "./routes/authRoutes";
 import businessRouter from "./routes/businessRoutes";
 import inviteRouter from "./routes/inviteRoutes";
 import publicRouter from "./routes/publicRoutes";
+import manageRouter from "./routes/manageRoutes";
 import cookieParser from "cookie-parser";
 
 const app = express();
@@ -30,6 +31,7 @@ app.use("/auth", authRouter);
 app.use("/businesses", businessRouter);
 app.use("/invites", inviteRouter);
 app.use("/public", publicRouter);
+app.use("/manage", manageRouter);
 
 app.use((_req, _res, next) => {
   next(new AppError(404, "Route not found", "NOT_FOUND"));

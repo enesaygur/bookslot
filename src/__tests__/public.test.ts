@@ -110,6 +110,7 @@ describe("public business info", () => {
     expect(Object.keys(first.body.appointment).sort()).toEqual([
       "endsAt",
       "id",
+      "manageToken",
       "priceCents",
       "startsAt",
       "status",
