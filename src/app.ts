@@ -8,8 +8,15 @@ import inviteRouter from "./routes/inviteRoutes";
 import publicRouter from "./routes/publicRoutes";
 import manageRouter from "./routes/manageRoutes";
 import cookieParser from "cookie-parser";
+import { env } from "./config/env";
+import { globalLimiter } from "./middleware/rateLimit";
 
 const app = express();
+
+if (env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
+app.use(globalLimiter);
 
 app.use(express.json());
 app.use(cookieParser());

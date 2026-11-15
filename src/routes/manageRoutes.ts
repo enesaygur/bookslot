@@ -7,9 +7,11 @@ import {
 } from "../controllers/manageController";
 import { validate } from "../middleware/validate";
 import { rescheduleAppointmentSchema } from "../schemas/appointmentSchema";
+import { manageLimiter } from "../middleware/rateLimit";
 
 const router = Router();
 
+router.use(manageLimiter);
 router.use(requireManageToken);
 
 router.get("/appointment", showManagedAppointment);

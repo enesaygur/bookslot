@@ -10,6 +10,7 @@ import {
   listMine,
   update,
 } from "../controllers/businessController";
+import { inviteLimiter } from "../middleware/rateLimit";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { requireRole } from "../middleware/requireRole";
 import { MemberRole } from "@prisma/client";
@@ -41,6 +42,7 @@ router.patch(
 );
 router.post(
   "/:businessId/invites",
+  inviteLimiter,
   requireRole(MemberRole.OWNER),
   validate(createInviteSchema),
   sendInvite,
