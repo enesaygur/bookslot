@@ -777,3 +777,17 @@ Authorization: Bearer {{loginMehmet.response.body.accessToken}}
 ### A'yı iptal et, geçmişteki randevu (409 APPOINTMENT_IN_PAST)
 POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[0].id}}/appointments/{{apptA.response.body.$.appointment.id}}/cancel
 Authorization: Bearer {{login.response.body.accessToken}}
+
+###
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{ "name": "Test Kullanici", "email": "enesaygur3@gmail.com", "password": "gizli12345" }
+
+### Verify Email
+POST http://localhost:3000/auth/verify-email
+Content-Type: application/json
+
+{
+  "token": "4c5691e0d7fa4fd69abb24eb46a577ec80ae051ae84eaed861508ff0dfab7e4b"
+}

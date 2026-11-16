@@ -1,13 +1,29 @@
 import { env } from "../config/env";
-import { email } from "zod";
+import { escapeHtml } from "../lib/html";
+import { sendEmail, type Email } from "../lib/mailer";
+
+async function safeSend(email: Email) {
+  try {
+    await sendEmail(email);
+  } catch (err) {
+    console.error(
+      `[email] failed to send "${email.subject}" to ${email.to}`,
+      err,
+    );
+  }
+}
 
 export async function sendVerificationEmail(to: string, token: string) {
   const link = `${env.FRONTEND_URL}/verify-email?token=${token}`;
 
-  if (env.NODE_ENV !== "production") {
-    console.log(`[email] To: ${to}`);
-    console.log(`[email] Verify link: ${link}`);
-  }
+  await safeSend({
+    to,
+    subject: "BookSlot e-postanı doğrula",
+    text: `BookSlot'a hoş geldin! E-postanı doğrulamak için bu bağlantıyı aç: ${link}`,
+    html: `<p>BookSlot'a hoş geldin!</p>
+<p><a href="${link}">E-postamı doğrula</a></p>
+<p>Düğme çalışmazsa bu adresi tarayıcına yapıştır: ${link}</p>`,
+  });
 }
 
 export async function sendInviteEmail(
@@ -16,9 +32,14 @@ export async function sendInviteEmail(
   businessName: string,
 ) {
   const link = `${env.FRONTEND_URL}/accept-invite?token=${token}`;
+  const name = escapeHtml(businessName);
 
-  if (env.NODE_ENV !== "production") {
-    console.log(`[email] To: ${to}`);
-    console.log(`[email] Invite to ${businessName}: ${link}`);
-  }
+  await safeSend({
+    to,
+    subject: `${businessName} seni ekibine davet etti`,
+    text: `${businessName} seni BookSlot'ta ekibine davet etti. Daveti kabul etmek için giriş yapıp bu bağlantıyı aç: ${link}`,
+    html: `<p><strong>${name}</strong> seni BookSlot'ta ekibine davet etti.</p>
+<p><a href="${link}">Daveti kabul et</a></p>
+<p>Düğme çalışmazsa bu adresi tarayıcına yapıştır: ${link}</p>`,
+  });
 }

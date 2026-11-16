@@ -1,7 +1,6 @@
 import "dotenv/config";
 
 import { z } from "zod";
-import { issue } from "./../../node_modules/zod/src/v4/core/util";
 
 const envSchema = z.object({
   NODE_ENV: z
@@ -11,6 +10,8 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   FRONTEND_URL: z.string().url().default("http://localhost:5173"),
   JWT_ACCESS_SECRET: z.string().min(32),
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().default("BookSlot <onboarding@resend.dev>"),
 });
 
 const result = envSchema.safeParse(process.env);
