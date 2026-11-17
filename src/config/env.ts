@@ -12,6 +12,7 @@ const envSchema = z.object({
   JWT_ACCESS_SECRET: z.string().min(32),
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().default("BookSlot <onboarding@resend.dev>"),
+  REDIS_URL: z.string().optional(),
 });
 
 const result = envSchema.safeParse(process.env);

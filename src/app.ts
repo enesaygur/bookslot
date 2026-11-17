@@ -10,6 +10,7 @@ import manageRouter from "./routes/manageRoutes";
 import cookieParser from "cookie-parser";
 import { env } from "./config/env";
 import { globalLimiter } from "./middleware/rateLimit";
+import { pingRedis } from "./lib/redis";
 
 const app = express();
 
@@ -31,6 +32,13 @@ app.get("/health/db", async (_req, res) => {
     res.json({ status: "ok" });
   } catch {
     res.status(503).json({ db: "unreachable" });
+  }
+});
+app.get("/health/redis", async (_req, res) => {
+  try {
+    res.json({ redis: await pingRedis() });
+  } catch {
+    res.status(503).json({ redis: "unreachable" });
   }
 });
 
