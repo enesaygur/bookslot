@@ -46,3 +46,9 @@ export function nextDate(date: string): string {
     DateTime.fromISO(date, { zone: "UTC" }).plus({ days: 1 }),
   );
 }
+
+export function formatLocalDateTime(date: Date, timeZone: string): string {
+  return DateTime.fromJSDate(date, { zone: timeZone })
+    .setLocale("tr")
+    .toFormat("d MMMM yyyy, cccc HH:mm");
+}

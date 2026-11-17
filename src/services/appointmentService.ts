@@ -20,6 +20,7 @@ import type {
   ListAppointmentsQuery,
 } from "../schemas/appointmentSchema";
 import { generateToken, hashToken } from "../lib/token";
+import { notifyBooked, notifyCancelled, notifyRescheduled } from "./appointmentEmailService";
 
 const MS_PER_MINUTE = 60_000;
 
@@ -108,7 +109,7 @@ export async function bookAppointment(
         select: appointmentSelect,
       });
     });
-
+    await notifyBooked(appointment.id, manageToken);
     return { appointment, manageToken };
   } catch (err) {
     if (isOverlapViolation(err)) throw slotUnavailable();
@@ -135,11 +136,13 @@ export async function cancelAppointment(
     );
   }
 
-  return prisma.appointment.update({
+  const cancelled = await prisma.appointment.update({
     where: { id: appointment.id },
     data: { status: AppointmentStatus.CANCELLED, cancelledAt: now },
     select: appointmentSelect,
   });
+  await notifyCancelled(cancelled.id);
+  return cancelled;
 }
 
 export async function rescheduleAppointment(
@@ -183,7 +186,7 @@ export async function rescheduleAppointment(
   if (!isOffered(slots, startsAt)) throw slotUnavailable();
 
   try {
-    return await prisma.$transaction(async (tx) => {
+    const updated = await prisma.$transaction(async (tx) => {
       const conflict = await tx.appointment.findFirst({
         where: overlappingActive(
           appointment.memberId,
@@ -201,6 +204,8 @@ export async function rescheduleAppointment(
         select: appointmentSelect,
       });
     });
+    await notifyRescheduled(updated.id);
+    return updated;
   } catch (err) {
     if (isOverlapViolation(err)) throw slotUnavailable();
     throw err;
