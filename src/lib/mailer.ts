@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { env } from "../config/env";
+import { EmailSendError } from "./emailErrors";
 
 export type Email = {
   to: string;
@@ -33,6 +34,8 @@ export async function sendEmail(email: Email): Promise<void> {
   });
 
   if (error) {
-    throw new Error(`Email send failed: ${error.message}`);
+    const statusCode =
+      (error as { statusCode: number | null }).statusCode ?? null;
+    throw new EmailSendError(`Email send failed: ${error.message}`, statusCode);
   }
 }

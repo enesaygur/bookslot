@@ -1,10 +1,11 @@
 import { env } from "../config/env";
 import { escapeHtml } from "../lib/html";
-import { sendEmail, type Email } from "../lib/mailer";
+import { type Email } from "../lib/mailer";
+import { enqueueEmail } from "../lib/queue";
 
 async function safeSend(email: Email) {
   try {
-    await sendEmail(email);
+    await enqueueEmail(email);
   } catch (err) {
     console.error(
       `[email] failed to send "${email.subject}" to ${email.to}`,

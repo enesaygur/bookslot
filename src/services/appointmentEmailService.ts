@@ -1,8 +1,9 @@
 import { env } from "../config/env";
 import { emailLayout } from "../lib/emailLayout";
 import { escapeHtml } from "../lib/html";
-import { sendEmail, type Email } from "../lib/mailer";
+import { type Email } from "../lib/mailer";
 import { prisma } from "../lib/prisma";
+import { enqueueEmail } from "../lib/queue";
 import { formatLocalDateTime } from "../lib/timezone";
 
 type Context = {
@@ -47,7 +48,7 @@ async function summaryHtml(c: Context) {
 
 async function notify(build: () => Promise<Email>) {
   try {
-    await sendEmail(await build());
+    await enqueueEmail(await build());
   } catch (err) {
     console.error("[email] appointment notification failed", err);
   }
