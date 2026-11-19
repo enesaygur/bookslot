@@ -5,6 +5,7 @@ import { type Email, sendEmail } from "./lib/mailer";
 import { EmailSendError, isPermanentEmailFailure } from "./lib/emailErrors";
 import { sendDueReminders } from "./services/reminderService";
 import { prisma } from "./lib/prisma";
+import { cleanupExpired } from "./services/cleanupService";
 
 if (!redis) {
   console.error("[worker] REDIS_URL is not set, nothing to process");
@@ -47,13 +48,26 @@ emailWorker.on("error", (err) => {
 
 const maintenanceQueue = new Queue(MAINTENANCE_QUEUE, { connection });
 
+const maintenanceJobOptions = {
+  removeOnComplete: { count: 20 },
+  removeOnFail: { count: 100 },
+};
+
 maintenanceQueue
   .upsertJobScheduler(
     "send-reminders",
     { every: 5 * 60_000 },
-    { name: "send-reminders" },
+    { name: "send-reminders", opts: maintenanceJobOptions },
   )
   .catch((err) => console.error("[worker] could not schedule reminders", err));
+
+maintenanceQueue
+  .upsertJobScheduler(
+    "cleanup-expired",
+    { pattern: "0 3 * * *" },
+    { name: "cleanup-expired", opts: maintenanceJobOptions },
+  )
+  .catch((err) => console.error("[worker] could not schedule cleanup", err));
 
 const maintenanceWorker = new Worker(
   MAINTENANCE_QUEUE,
@@ -61,6 +75,11 @@ const maintenanceWorker = new Worker(
     if (job.name === "send-reminders") {
       const count = await sendDueReminders();
       if (count > 0) console.log(`[worker] queued ${count} reminder email(s)`);
+    }
+
+    if (job.name === "cleanup-expired") {
+      const result = await cleanupExpired();
+      console.log("[worker] cleanup done", result);
     }
   },
   { connection },
