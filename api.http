@@ -210,7 +210,7 @@ POST http://localhost:3000/invites/accept
 Content-Type: application/json
 Authorization: Bearer {{loginMehmet.response.body.accessToken}}
 
-{ "token": "3a3bea476a8568fca73cb0c38b09b3233bb983894f389de41bbe57a447310c2e" }
+{ "token": "9287c7b385c9c7c34fdd233435cad1fd5b73ef757222dc8746fdabbf3c651770" }
 
 ### 4) Aynı token tekrar (400)
 POST http://localhost:3000/invites/accept
@@ -674,7 +674,7 @@ Authorization: Bearer {{login.response.body.accessToken}}
 
 
 ### 10) IDOR: Mehmet kendi işletmesinde Ali'nin personeliyle randevu yazmaya çalışır (404)
-POST http://localhost:3000/businesses/{{mehmetBusinesses.response.body.$.businesses[0].id}}/appointments
+POST http://localhost:3000/businesses/{{createMehmetBiz.response.body.$.businesses[0].id}}/appointments
 Content-Type: application/json
 Authorization: Bearer {{loginMehmet.response.body.accessToken}}
 
@@ -771,7 +771,7 @@ POST http://localhost:3000/businesses/{{myBusinesses.response.body.$.businesses[
 Authorization: Bearer {{loginMehmet.response.body.accessToken}}
 
 ### 10) IDOR: Mehmet kendi işletmesinin URL'siyle Ali'nin randevusunu iptal etmeye çalışır (404)
-POST http://localhost:3000/businesses/{{mehmetBusinesses.response.body.$.businesses[0].id}}/appointments/{{apptA.response.body.$.appointment.id}}/cancel
+POST http://localhost:3000/businesses/{{createMehmetBiz.response.body.$.businesses[0].id}}/appointments/{{apptA.response.body.$.appointment.id}}/cancel
 Authorization: Bearer {{loginMehmet.response.body.accessToken}}
 
 ### A'yı iptal et, geçmişteki randevu (409 APPOINTMENT_IN_PAST)

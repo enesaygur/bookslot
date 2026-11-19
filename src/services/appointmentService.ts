@@ -200,7 +200,7 @@ export async function rescheduleAppointment(
 
       return tx.appointment.update({
         where: { id: appointment.id },
-        data: { startsAt, endsAt },
+        data: { startsAt, endsAt, reminderProcessedAt: null },
         select: appointmentSelect,
       });
     });

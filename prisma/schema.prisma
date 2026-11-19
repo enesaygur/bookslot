@@ -144,26 +144,28 @@ enum AppointmentStatus {
 }
 
 model Appointment {
-  id              String            @id @default(uuid())
-  businessId      String
-  business        Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  memberId        String
-  member          Member            @relation(fields: [memberId], references: [id], onDelete: Restrict)
-  serviceId       String
-  service         Service           @relation(fields: [serviceId], references: [id], onDelete: Restrict)
-  startsAt        DateTime
-  endsAt          DateTime
-  status          AppointmentStatus @default(CONFIRMED)
-  priceCents      Int
-  customerName    String
-  customerEmail   String
-  customerPhone   String?
-  notes           String?
-  cancelledAt     DateTime?
-  manageTokenHash String?           @unique
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  id                  String            @id @default(uuid())
+  businessId          String
+  business            Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  memberId            String
+  member              Member            @relation(fields: [memberId], references: [id], onDelete: Restrict)
+  serviceId           String
+  service             Service           @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  startsAt            DateTime
+  endsAt              DateTime
+  status              AppointmentStatus @default(CONFIRMED)
+  priceCents          Int
+  customerName        String
+  customerEmail       String
+  customerPhone       String?
+  notes               String?
+  cancelledAt         DateTime?
+  reminderProcessedAt DateTime?
+  manageTokenHash     String?           @unique
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
 
   @@index([memberId, startsAt])
   @@index([businessId, startsAt])
+  @@index([startsAt])
 }

@@ -103,3 +103,19 @@ export function notifyCancelled(appointmentId: string) {
     };
   });
 }
+
+export function notifyReminder(appointmentId: string) {
+  return notify(async () => {
+    const c = await loadContext(appointmentId);
+
+    return {
+      to: c.to,
+      subject: `Randevu hatırlatması: ${c.businessName}`,
+      text: `Merhaba ${c.customerName},\n\nYaklaşan randevunu hatırlatmak isteriz.\n\n${summaryText(c)}\n\nRandevunu ilk onay e-postandaki bağlantıyla yönetebilirsin.`,
+      html: emailLayout({
+        heading: "Randevun yaklaşıyor",
+        bodyHtml: `<p>Merhaba ${escapeHtml(c.customerName)},</p><p>Yaklaşan randevunu hatırlatmak isteriz:</p>${summaryHtml(c)}<p>Randevunu ilk onay e-postandaki bağlantıyla yönetebilirsin.</p>`,
+      }),
+    };
+  });
+}
