@@ -11,7 +11,8 @@
     "db:test:migrate": "dotenv -e .env.test -- prisma migrate deploy",
     "worker": "tsx watch src/worker.ts",
     "start:worker": "node dist/worker.js",
-    "cleanup": "tsx src/scripts/cleanup.ts"
+    "cleanup": "tsx src/scripts/cleanup.ts",
+    "iyzico:ping": "tsx src/scripts/iyzicoPing.ts"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +21,7 @@
   "devDependencies": {
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.6",
+    "@types/iyzipay": "^2.0.3",
     "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/luxon": "^3.7.6",
@@ -42,6 +44,7 @@
     "express": "^5.3.0",
     "express-rate-limit": "^8.7.4",
     "ioredis": "^6.0.0",
+    "iyzipay": "^2.0.71",
     "jsonwebtoken": "^9.0.3",
     "luxon": "^3.7.2",
     "resend": "^6.38.1",

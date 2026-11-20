@@ -13,6 +13,9 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().default("BookSlot <onboarding@resend.dev>"),
   REDIS_URL: z.string().optional(),
+  IYZICO_API_KEY: z.string().optional(),
+  IYZICO_SECRET_KEY: z.string().optional(),
+  IYZICO_BASE_URL: z.string().url().default("https://sandbox-api.iyzipay.com"),
 });
 
 const result = envSchema.safeParse(process.env);
