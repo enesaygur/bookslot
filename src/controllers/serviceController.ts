@@ -23,6 +23,7 @@ export async function getService(req: Request, res: Response) {
     description,
     durationMinutes,
     priceCents,
+    depositCents,
     isActive,
     createdAt,
   } = req.service!;
@@ -33,6 +34,7 @@ export async function getService(req: Request, res: Response) {
       description,
       durationMinutes,
       priceCents,
+      depositCents,
       isActive,
       createdAt,
     },
@@ -40,7 +42,7 @@ export async function getService(req: Request, res: Response) {
 }
 
 export async function updateService(req: Request, res: Response) {
-  const service = await editService(req.service!.id, req.body);
+  const service = await editService(req.service!, req.body);
   res.json({ service });
 }
 

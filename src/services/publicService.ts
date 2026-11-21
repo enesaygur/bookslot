@@ -22,6 +22,7 @@ export async function findPublicBusiness(slug: string) {
           description: true,
           durationMinutes: true,
           priceCents: true,
+          depositCents: true,
         },
         orderBy: { createdAt: "asc" },
       },

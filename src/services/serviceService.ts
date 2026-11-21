@@ -1,8 +1,10 @@
+import { Service } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import {
   CreateServiceInput,
   UpdateServiceInput,
 } from "../schemas/serviceSchema";
+import { AppError } from "../errors/AppError";
 
 const serviceSelect = {
   id: true,
@@ -10,6 +12,7 @@ const serviceSelect = {
   description: true,
   durationMinutes: true,
   priceCents: true,
+  depositCents: true,
   isActive: true,
   createdAt: true,
 } as const;
@@ -32,12 +35,16 @@ export async function addService(
   });
 }
 
-export async function editService(
-  serviceId: string,
-  input: UpdateServiceInput,
-) {
+export async function editService(service: Service, input: UpdateServiceInput) {
+  const price = input.priceCents ?? service.priceCents;
+  const deposit = input.depositCents ?? service.depositCents;
+
+  if (deposit > price) {
+    throw new AppError(400, "Deposit cannot exceed price", "INVALID_DEPOSIT");
+  }
+
   return await prisma.service.update({
-    where: { id: serviceId },
+    where: { id: service.id },
     data: input,
     select: serviceSelect,
   });

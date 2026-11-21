@@ -105,6 +105,7 @@ model Service {
   description     String?
   durationMinutes Int
   priceCents      Int
+  depositCents    Int           @default(0)
   isActive        Boolean       @default(true)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -161,11 +162,35 @@ model Appointment {
   notes               String?
   cancelledAt         DateTime?
   reminderProcessedAt DateTime?
+  holdExpiresAt       DateTime?
+  payment             Payment?
   manageTokenHash     String?           @unique
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
+  paymentId           String?
 
   @@index([memberId, startsAt])
   @@index([businessId, startsAt])
   @@index([startsAt])
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  appointmentId     String        @unique
+  appointment       Appointment   @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+  amountCents       Int
+  currency          String        @default("TRY")
+  status            PaymentStatus @default(PENDING)
+  providerToken     String?       @unique
+  providerPaymentId String?
+  failureReason     String?
+  paidAt            DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 }
