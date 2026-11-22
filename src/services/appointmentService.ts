@@ -20,9 +20,15 @@ import type {
   ListAppointmentsQuery,
 } from "../schemas/appointmentSchema";
 import { generateToken, hashToken } from "../lib/token";
-import { notifyBooked, notifyCancelled, notifyRescheduled } from "./appointmentEmailService";
+import {
+  notifyBooked,
+  notifyCancelled,
+  notifyRescheduled,
+} from "./appointmentEmailService";
 
 const MS_PER_MINUTE = 60_000;
+const HOLD_MINUTES = 15;
+type BookOptions = { collectDeposit?: boolean };
 
 const appointmentSelect = {
   id: true,
@@ -36,6 +42,7 @@ const appointmentSelect = {
   customerEmail: true,
   customerPhone: true,
   notes: true,
+  holdExpiresAt: true,
   cancelledAt: true,
   createdAt: true,
 } as const;
@@ -52,12 +59,13 @@ export async function bookAppointment(
   businessId: string,
   input: CreateAppointmentInput,
   now: Date = new Date(),
+  options: BookOptions = {},
 ) {
   await assertMemberInBusiness(businessId, input.memberId);
 
   const service = await prisma.service.findFirst({
     where: { id: input.serviceId, businessId, isActive: true },
-    select: { durationMinutes: true, priceCents: true },
+    select: { durationMinutes: true, priceCents: true, depositCents: true },
   });
   if (!service) {
     throw new AppError(404, "Service not found", "NOT_FOUND");
@@ -82,10 +90,12 @@ export async function bookAppointment(
   });
   if (!isOffered(slots, startsAt)) throw slotUnavailable();
 
+  const depositCents = options.collectDeposit ? service.depositCents : 0;
+  const needsPayment = depositCents > 0;
   const manageToken = generateToken();
 
   try {
-    const appointment = await prisma.$transaction(async (tx) => {
+    const created = await prisma.$transaction(async (tx) => {
       const conflict = await tx.appointment.findFirst({
         where: overlappingActive(input.memberId, startsAt, endsAt),
         select: { id: true },
@@ -99,18 +109,35 @@ export async function bookAppointment(
           serviceId: input.serviceId,
           startsAt,
           endsAt,
+          status: needsPayment
+            ? AppointmentStatus.PENDING_PAYMENT
+            : AppointmentStatus.CONFIRMED,
+          holdExpiresAt: needsPayment
+            ? new Date(now.getTime() + HOLD_MINUTES * MS_PER_MINUTE)
+            : null,
           priceCents: service.priceCents,
           customerName: input.customerName,
           customerEmail: input.customerEmail,
           customerPhone: input.customerPhone,
           notes: input.notes,
           manageTokenHash: hashToken(manageToken),
+          payment: needsPayment
+            ? { create: { amountCents: depositCents } }
+            : undefined,
         },
-        select: appointmentSelect,
+        select: {
+          ...appointmentSelect,
+          payment: { select: { id: true, amountCents: true } },
+        },
       });
     });
-    await notifyBooked(appointment.id, manageToken);
-    return { appointment, manageToken };
+
+    const { payment, ...appointment } = created;
+    
+    if (!needsPayment) {
+      await notifyBooked(appointment.id, manageToken);
+    }
+    return { appointment, manageToken, payment };
   } catch (err) {
     if (isOverlapViolation(err)) throw slotUnavailable();
     throw err;

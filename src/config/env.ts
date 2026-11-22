@@ -16,6 +16,7 @@ const envSchema = z.object({
   IYZICO_API_KEY: z.string().optional(),
   IYZICO_SECRET_KEY: z.string().optional(),
   IYZICO_BASE_URL: z.string().url().default("https://sandbox-api.iyzipay.com"),
+  API_PUBLIC_URL: z.string().url().default("http://localhost:3000"),
 });
 
 const result = envSchema.safeParse(process.env);

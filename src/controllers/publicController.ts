@@ -24,6 +24,7 @@ export async function createPublicAppointment(req: Request, res: Response) {
   const appointment = await bookPublicAppointment(
     req.params.slug as string,
     req.body,
+    { ip: req.ip ?? "127.0.0.1" },
   );
   res.status(201).json({ appointment });
 }

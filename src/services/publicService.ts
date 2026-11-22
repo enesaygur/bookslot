@@ -6,6 +6,7 @@ import { CreateAppointmentInput } from "../schemas/appointmentSchema";
 import type { AvailabilityQuery } from "../schemas/availabilitySchema";
 import { getAvailability } from "./availabilityService";
 import { bookAppointment } from "./appointmentService";
+import { startCheckout, releaseFailedCheckout } from "./paymentService";
 
 export async function findPublicBusiness(slug: string) {
   const business = await prisma.business.findUnique({
@@ -99,16 +100,13 @@ export async function getPublicAvailability(
 export async function bookPublicAppointment(
   slug: string,
   input: CreateAppointmentInput,
+  context: { ip: string },
   now: Date = new Date(),
 ) {
   const business = await findBusinessBySlug(slug);
 
-  const startAt = new Date(input.startsAt);
-  assertWithinHorizon(
-    toLocalDate(startAt, business.timezone),
-    business.timezone,
-    now,
-  );
+  const startsAt = new Date(input.startsAt);
+  assertWithinHorizon(toLocalDate(startsAt, business.timezone), business.timezone, now);
 
   const activeCount = await prisma.appointment.count({
     where: {
@@ -118,26 +116,41 @@ export async function bookPublicAppointment(
       startsAt: { gt: now },
     },
   });
-
   if (activeCount >= MAX_ACTIVE_PER_CUSTOMER) {
-    throw new AppError(
-      429,
-      "Too many upcoming appointments",
-      "TOO_MANY_APPOINTMENTS",
-    );
+    throw new AppError(429, "Too many upcoming appointments", "TOO_MANY_APPOINTMENTS");
   }
 
-  const { appointment, manageToken } = await bookAppointment(
-    business.id,
-    input,
-    now,
-  );
-  return {
-    id: appointment.id,
-    startsAt: appointment.startsAt,
-    endsAt: appointment.endsAt,
-    status: appointment.status,
-    priceCents: appointment.priceCents,
-    manageToken,
+  const result = await bookAppointment(business.id, input, now, { collectDeposit: true });
+
+  const summary = {
+    id: result.appointment.id,
+    startsAt: result.appointment.startsAt,
+    endsAt: result.appointment.endsAt,
+    status: result.appointment.status,
+    priceCents: result.appointment.priceCents,
+    manageToken: result.manageToken,
   };
+
+  if (!result.payment) {
+    return summary;
+  }
+
+  try {
+    const checkout = await startCheckout(result.appointment.id, context.ip);
+    return {
+      ...summary,
+      payment: {
+        amountCents: result.payment.amountCents,
+        pageUrl: checkout.paymentPageUrl,
+        expiresAt: result.appointment.holdExpiresAt,
+      },
+    };
+  } catch (err) {
+    await releaseFailedCheckout(
+      result.appointment.id,
+      result.payment.id,
+      err instanceof Error ? err.message : "checkout failed",
+    );
+    throw err;
+  }
 }
