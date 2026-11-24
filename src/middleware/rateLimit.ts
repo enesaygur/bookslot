@@ -57,3 +57,8 @@ export const manageLimiter = createRateLimiter({
   windowMs: 15 * MINUTE,
   limit: 60,
 });
+
+export const paymentCallbackLimiter = createRateLimiter({
+  windowMs: 15 * MINUTE,
+  limit: 60,
+});

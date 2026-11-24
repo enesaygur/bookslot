@@ -4,6 +4,9 @@ import { iyzico, iyzicoCall } from "../lib/iyzico";
 import { prisma } from "../lib/prisma";
 import { env } from "../config/env";
 import { AppointmentStatus, PaymentStatus } from "@prisma/client";
+import { string } from "zod";
+import { generateToken, hashToken } from "../lib/token";
+import { notifyBooked } from "./appointmentEmailService";
 
 type InitializeResult = {
   status: string;
@@ -84,12 +87,8 @@ export async function startCheckout(appointmentId: string, ip: string) {
               price,
             },
           ],
-        } as unknown as Parameters<
-          typeof client.checkoutFormInitialize.create
-        >[0],
-        (err, response) => {
-          done(err, response as unknown as InitializeResult);
         },
+        done,
       ),
     );
   } catch (err) {
@@ -135,4 +134,150 @@ export async function releaseFailedCheckout(
       data: { status: PaymentStatus.FAILED, failureReason: reason },
     }),
   ]);
+}
+
+type RetrieveResult = {
+  status: string;
+  paymentStatus?: string;
+  paymentId?: string | number;
+  conversationId?: string;
+  basketId?: string;
+  paidPrice?: string | number;
+  errorMessage: string;
+};
+
+export type CallbackOutcome = {
+  outcome: "success" | "failed" | "late" | "error";
+  appointmentId?: string;
+};
+
+export async function handleCheckoutCallback(
+  token: string | undefined,
+  now: Date = new Date(),
+): Promise<CallbackOutcome> {
+  if (!token) return { outcome: "error" };
+
+  const payment = await prisma.payment.findUnique({
+    where: { providerToken: token },
+  });
+  if (!payment) return { outcome: "error" };
+
+  const appointmentId = payment.appointmentId;
+
+  if (payment.status === PaymentStatus.PAID) {
+    return {
+      outcome: payment.failureReason ? "late" : "success",
+      appointmentId,
+    };
+  }
+
+  if (payment.status === PaymentStatus.FAILED) {
+    return { outcome: "failed", appointmentId };
+  }
+
+  if (!iyzico) {
+    throw new AppError(
+      503,
+      "Online payments are not configured",
+      "PAYMENTS_DISABLED",
+    );
+  }
+  const client = iyzico;
+
+  let result: RetrieveResult;
+  try {
+    result = await iyzicoCall<RetrieveResult>((done) =>
+      client.checkoutForm.retrieve(
+        {
+          locale: Iyzipay.LOCALE.TR,
+          conversationId: payment.id,
+          token,
+        },
+        done,
+      ),
+    );
+  } catch (err) {
+    console.error("[payment] iyzico retrieve failed", err);
+    throw new AppError(
+      502,
+      "Payment provider unavailable",
+      "PAYMENT_UNAVAILABLE",
+    );
+  }
+
+  const paid =
+    result.status === "success" && result.paymentStatus === "SUCCESS";
+
+  if (!paid) {
+    await releaseFailedCheckout(
+      appointmentId,
+      payment.id,
+      result.errorMessage ?? "payment failed",
+    );
+    return { outcome: "failed", appointmentId };
+  }
+
+  const paidCents = Math.round(Number(result.paidPrice) * 100);
+  const matches =
+    result.conversationId === payment.id &&
+    result.basketId === appointmentId &&
+    paidCents === payment.amountCents;
+
+  if (!matches) {
+    console.error(`[payment] verification mismatch for payment ${payment.id}`);
+    return { outcome: "error", appointmentId };
+  }
+
+  const manageToken = generateToken();
+
+  const state = await prisma.$transaction(async (tx) => {
+    const claimed = await tx.payment.updateMany({
+      where: { id: payment.id, status: PaymentStatus.PENDING },
+      data: {
+        status: PaymentStatus.PAID,
+        paidAt: now,
+        providerPaymentId: result.paymentId
+          ? String(result.paymentId)
+          : undefined,
+      },
+    });
+
+    if (claimed.count !== 1) return "allready" as const;
+
+    const activated = await tx.appointment.updateMany({
+      where: { id: appointmentId, status: AppointmentStatus.PENDING_PAYMENT },
+      data: {
+        status: AppointmentStatus.CONFIRMED,
+        holdExpiresAt: null,
+        manageTokenHash: hashToken(manageToken),
+      },
+    });
+
+    if (activated.count !== 1) {
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: { failureReason: "PAID_AFTER_CANCELLATION" },
+      });
+      return "late" as const;
+    }
+
+    return "confirmed" as const;
+  });
+
+  if (state === "confirmed") {
+    await notifyBooked(appointmentId, manageToken);
+    return { outcome: "success", appointmentId };
+  }
+
+  if (state === "late") {
+    console.error(
+      `[payment] payment ${payment.id} was paid after appointment ${appointmentId} was released, refund needed`,
+    );
+    return { outcome: "late", appointmentId };
+  }
+
+  const fresh = await prisma.payment.findUniqueOrThrow({
+    where: { id: payment.id },
+  });
+  return { outcome: fresh.failureReason ? "late" : "success", appointmentId };
 }

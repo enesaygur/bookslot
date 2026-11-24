@@ -7,6 +7,7 @@ import businessRouter from "./routes/businessRoutes";
 import inviteRouter from "./routes/inviteRoutes";
 import publicRouter from "./routes/publicRoutes";
 import manageRouter from "./routes/manageRoutes";
+import paymentRouter from "./routes/paymentRoutes";
 import cookieParser from "cookie-parser";
 import { env } from "./config/env";
 import { globalLimiter } from "./middleware/rateLimit";
@@ -47,6 +48,7 @@ app.use("/businesses", businessRouter);
 app.use("/invites", inviteRouter);
 app.use("/public", publicRouter);
 app.use("/manage", manageRouter);
+app.use("/payments", paymentRouter);
 
 app.use((_req, _res, next) => {
   next(new AppError(404, "Route not found", "NOT_FOUND"));
