@@ -218,13 +218,18 @@ export async function handleCheckoutCallback(
   }
 
   const paidCents = Math.round(Number(result.paidPrice) * 100);
-  const matches =
-    result.conversationId === payment.id &&
-    result.basketId === appointmentId &&
-    paidCents === payment.amountCents;
+  const sameConversation = result.conversationId === payment.id;
+  const sameBasket = result.basketId === appointmentId;
+  const sameAmount = paidCents === payment.amountCents;
 
-  if (!matches) {
-    console.error(`[payment] verification mismatch for payment ${payment.id}`);
+  if (!sameConversation || !sameBasket || !sameAmount) {
+    console.error(`[payment] verification mismatch for payment ${payment.id}`, {
+      sameConversation,
+      sameBasket,
+      sameAmount,
+      paidCents,
+      expectedCents: payment.amountCents,
+    });
     return { outcome: "error", appointmentId };
   }
 

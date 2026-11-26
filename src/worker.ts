@@ -6,6 +6,7 @@ import { EmailSendError, isPermanentEmailFailure } from "./lib/emailErrors";
 import { sendDueReminders } from "./services/reminderService";
 import { prisma } from "./lib/prisma";
 import { cleanupExpired } from "./services/cleanupService";
+import { releaseExpiredHolds } from "./services/paymentExpiryService";
 
 if (!redis) {
   console.error("[worker] REDIS_URL is not set, nothing to process");
@@ -69,6 +70,16 @@ maintenanceQueue
   )
   .catch((err) => console.error("[worker] could not schedule cleanup", err));
 
+maintenanceQueue
+  .upsertJobScheduler(
+    "release-expired-holds",
+    { every: 60_000 },
+    { name: "release-expired-holds", opts: maintenanceJobOptions },
+  )
+  .catch((err) =>
+    console.error("[worker] could not schedule hold expiry", err),
+  );
+
 const maintenanceWorker = new Worker(
   MAINTENANCE_QUEUE,
   async (job) => {
@@ -80,6 +91,13 @@ const maintenanceWorker = new Worker(
     if (job.name === "cleanup-expired") {
       const result = await cleanupExpired();
       console.log("[worker] cleanup done", result);
+    }
+
+    if (job.name === "release-expired-holds") {
+      const result = await releaseExpiredHolds();
+      if (result.releasedAppointments > 0 || result.abandonedPayments > 0) {
+        console.log("[worker] released holds", result);
+      }
     }
   },
   { connection },
