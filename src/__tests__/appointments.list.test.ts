@@ -54,9 +54,6 @@ describe("appointment listing", () => {
         .set("Authorization", `Bearer ${token}`);
 
     const owner = await list(f.token, { from: "2030-01-07", to: "2030-01-07" });
-    console.log("STATUS:", owner.status);
-    console.log("BODY:", JSON.stringify(owner.body, null, 2));
-    console.log("TEXT:", owner.text);
     expect(owner.body.appointments).toHaveLength(2);
 
     const staffView = await list(staffToken, {

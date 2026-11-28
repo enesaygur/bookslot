@@ -9,11 +9,11 @@ export async function resetDb() {
   await prisma.$executeRawUnsafe('TRUNCATE TABLE "User", "Business" CASCADE');
 }
 
-export async function createBusinessFixture() {
+export async function createBusinessFixture(suffix = "") {
   const user = await prisma.user.create({
     data: {
       name: "Owner",
-      email: "owner@test.com",
+      email: `owner${suffix}@test.com`,
       passwordHash: "x",
       emailVerifiedAt: new Date(),
     },
@@ -22,7 +22,7 @@ export async function createBusinessFixture() {
   const business = await prisma.business.create({
     data: {
       name: "Test Salon",
-      slug: "test-salon",
+      slug: `test-salon${suffix}`,
       timezone: "Europe/Istanbul",
       members: { create: { userId: user.id, role: MemberRole.OWNER } },
     },
